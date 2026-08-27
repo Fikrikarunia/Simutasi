@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import { 
   LayoutDashboard, 
@@ -12,12 +12,43 @@ import {
   HelpCircle, 
   Building2, 
   ShieldCheck, 
-  UserCheck 
+  UserCheck,
+  CheckCircle2,
+  AlertCircle,
+  X,
+  Info
 } from 'lucide-react';
 
 export default function AuthenticatedLayout({ children, title }) {
   const { auth, flash } = usePage().props;
   const user = auth.user;
+  const [toasts, setToasts] = useState([]);
+
+  useEffect(() => {
+    if (flash?.success) {
+      const id = Date.now() + Math.random();
+      setToasts((prev) => [...prev, { id, type: 'success', title: 'Berhasil', message: flash.success }]);
+      const timer = setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [flash?.success]);
+
+  useEffect(() => {
+    if (flash?.error) {
+      const id = Date.now() + Math.random();
+      setToasts((prev) => [...prev, { id, type: 'error', title: 'Perhatian', message: flash.error }]);
+      const timer = setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [flash?.error]);
+
+  const removeToast = (id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
 
   const handleLogout = (e) => {
     e.preventDefault();
@@ -27,7 +58,38 @@ export default function AuthenticatedLayout({ children, title }) {
   const isAdmin = user?.role === 'admin_dinas' || user?.role === 'super_admin';
 
   return (
-    <div className="min-h-screen flex bg-slate-50 text-slate-800 font-sans">
+    <div className="min-h-screen flex bg-slate-50 text-slate-800 font-sans relative">
+      {/* Toast Notification Container (Floating Top-Right) */}
+      <div className="fixed top-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`pointer-events-auto bg-white/95 backdrop-blur-xs border-l-4 rounded-2xl p-4 shadow-xl border border-slate-200/80 flex items-start gap-3 transition-all animate-in slide-in-from-top-4 fade-in duration-300 ${
+              toast.type === 'success' ? 'border-l-emerald-500' : 'border-l-rose-500'
+            }`}
+          >
+            <div className={`p-1.5 rounded-xl shrink-0 ${
+              toast.type === 'success' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+            }`}>
+              {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+            </div>
+
+            <div className="flex-1 min-w-0 pr-1">
+              <h4 className="font-extrabold text-xs text-slate-900 leading-tight">{toast.title}</h4>
+              <p className="text-xs text-slate-600 font-medium mt-0.5 leading-relaxed">{toast.message}</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => removeToast(toast.id)}
+              className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-all shrink-0 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ))}
+      </div>
+
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0">
         <div>
@@ -153,19 +215,6 @@ export default function AuthenticatedLayout({ children, title }) {
             </div>
           </div>
         </header>
-
-        {/* Flash Notifications */}
-        {flash?.success && (
-          <div className="mx-8 mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm font-medium flex items-center justify-between shadow-xs">
-            <span>✨ {flash.success}</span>
-          </div>
-        )}
-
-        {flash?.error && (
-          <div className="mx-8 mt-6 p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-sm font-medium flex items-center justify-between shadow-xs">
-            <span>⚠️ {flash.error}</span>
-          </div>
-        )}
 
         {/* Page Content */}
         <main className="p-8 flex-1">{children}</main>

@@ -12,7 +12,7 @@ window.route = function (name, params, absolute, config) {
     
     // Fallback Routes Mapping
     const routesMap = {
-        'dashboard': '/',
+        'dashboard': '/dashboard',
         'login': '/login',
         'logout': '/logout',
         'mutation.index': '/mutation',
@@ -23,6 +23,8 @@ window.route = function (name, params, absolute, config) {
         'mutation.update': (id) => `/mutation/${id}/update`,
         'mutation.issue_letter': (id) => `/mutation/${id}/issue-letter`,
         'mutation.download_letter': (id) => `/mutation/${id}/download-letter`,
+        'document.view': (id) => `/document/${id}/view`,
+        'document.download': (id) => `/document/${id}/download`,
         'letter.verify': (hash) => `/verify-letter/${hash}`,
     };
 

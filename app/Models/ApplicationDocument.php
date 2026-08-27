@@ -25,6 +25,15 @@ class ApplicationDocument extends Model
         'is_valid' => 'boolean',
     ];
 
+    protected $appends = [
+        'file_url',
+    ];
+
+    public function getFileUrlAttribute()
+    {
+        return asset('storage/' . $this->file_path);
+    }
+
     public function mutationApplication()
     {
         return $this->belongsTo(MutationApplication::class);

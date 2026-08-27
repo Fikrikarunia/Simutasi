@@ -73,7 +73,24 @@ class MutationApplicationController extends Controller
             'reason' => 'nullable|string',
             'surat_pindah' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'rapor' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'kk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'kk' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
+        ], [
+            'required' => ':attribute wajib diisi / diunggah.',
+            'size' => ':attribute harus berisi tepat :size digit.',
+            'max' => ':attribute tidak boleh melebihi :max karakter / 2MB.',
+            'mimes' => ':attribute harus berformat PDF, JPG, JPEG, atau PNG.',
+            'in' => 'Pilihan :attribute tidak sesuai.',
+        ], [
+            'type' => 'Jenis Mutasi',
+            'nisn' => 'NISN',
+            'name' => 'Nama Lengkap Siswa',
+            'destination_class' => 'Kelas Tujuan',
+            'school_origin_name' => 'Sekolah Asal',
+            'school_destination_name' => 'Sekolah Tujuan',
+            'reason' => 'Alasan Mutasi',
+            'surat_pindah' => 'Dokumen Surat Keterangan Pindah',
+            'rapor' => 'Dokumen Fotokopi Rapor',
+            'kk' => 'Dokumen Kartu Keluarga (KK)',
         ]);
 
         $user = Auth::user();
@@ -301,5 +318,70 @@ class MutationApplicationController extends Controller
         ]);
 
         return redirect()->route('dashboard')->with('success', 'Dokumen berhasil diperbarui dan dikirim ulang untuk verifikasi.');
+    }
+
+    public function downloadDocument($id)
+    {
+        $document = ApplicationDocument::findOrFail($id);
+
+        if (!Storage::disk('public')->exists($document->file_path)) {
+            return response()->streamDownload(function() use ($document) {
+                echo "=========================================\n";
+                echo "SIMUTASI - DOKUMEN SAMPEL DEMO\n";
+                echo "=========================================\n\n";
+                echo "Jenis Dokumen : " . $document->document_label . "\n";
+                echo "Nama File     : " . $document->original_name . "\n";
+                echo "Keterangan    : Dokumen sampel bawaan sistem demo.\n";
+            }, $document->original_name, [
+                'Content-Type' => 'text/plain',
+            ]);
+        }
+
+        return Storage::disk('public')->download($document->file_path, $document->original_name);
+    }
+
+    public function viewDocument($id)
+    {
+        $document = ApplicationDocument::findOrFail($id);
+
+        if (!Storage::disk('public')->exists($document->file_path)) {
+            $label = e($document->document_label);
+            $name = e($document->original_name);
+            $html = <<<HTML
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pratinjau Dokumen</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; margin: 0; padding: 24px; display: flex; align-items: center; justify-content: center; min-height: 85vh; color: #1e293b; }
+        .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 32px; text-align: center; max-width: 420px; width: 100%; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
+        .icon { width: 56px; height: 56px; background: #e0f2fe; color: #0369a1; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; margin: 0 auto 16px auto; }
+        h3 { margin: 0 0 6px 0; font-size: 16px; font-weight: 800; color: #0f172a; }
+        p { margin: 0 0 16px 0; font-size: 12px; color: #64748b; }
+        .badge { display: inline-block; padding: 10px 16px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 12px; font-weight: 600; color: #475569; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">📄</div>
+        <h3>{$label}</h3>
+        <p>{$name}</p>
+        <div class="badge">Dokumen Sampel Sistem Demo</div>
+    </div>
+</body>
+</html>
+HTML;
+            return response($html, 200, ['Content-Type' => 'text/html']);
+        }
+
+        $path = Storage::disk('public')->path($document->file_path);
+        $mimeType = Storage::disk('public')->mimeType($document->file_path) ?: ($document->file_type ?: 'application/pdf');
+
+        return response()->file($path, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . $document->original_name . '"',
+        ]);
     }
 }
