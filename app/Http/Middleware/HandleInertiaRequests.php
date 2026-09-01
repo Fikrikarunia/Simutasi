@@ -47,10 +47,141 @@ class HandleInertiaRequests extends Middleware
                     'school' => $request->user()->school,
                 ] : null,
             ],
+            'notifications' => fn () => $request->user() ? $this->getNotifications($request->user()) : [],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
             ],
         ];
+    }
+
+    protected function getNotifications($user): array
+    {
+        if (!$user) {
+            return [];
+        }
+
+        $notifications = [];
+
+        if ($user->isAdminDinas() || $user->isSuperAdmin()) {
+            $apps = \App\Models\MutationApplication::with(['student'])
+                ->orderBy('updated_at', 'desc')
+                ->take(10)
+                ->get();
+
+            foreach ($apps as $app) {
+                $studentName = $app->student ? $app->student->name : 'Siswa';
+                if ($app->status === 'Diajukan') {
+                    $notifications[] = [
+                        'id' => 'notif-app-' . $app->id,
+                        'title' => 'Pengajuan Menunggu Verifikasi',
+                        'message' => "Pengajuan Mutasi {$app->type} #{$app->registration_number} ({$studentName}) membutuhkan verifikasi berkas.",
+                        'time' => $app->updated_at ? $app->updated_at->diffForHumans() : 'baru saja',
+                        'timestamp' => $app->updated_at ? $app->updated_at->timestamp : time(),
+                        'type' => 'warning',
+                        'url' => route('mutation.show', $app->id),
+                        'application_id' => $app->id,
+                    ];
+                } elseif ($app->status === 'Diverifikasi') {
+                    $notifications[] = [
+                        'id' => 'notif-app-' . $app->id,
+                        'title' => 'Berkas Valid - Siap Terbitkan Surat',
+                        'message' => "Berkas #{$app->registration_number} ({$studentName}) telah disetujui. Siap diterbitkan Surat Mutasi Digital.",
+                        'time' => $app->updated_at ? $app->updated_at->diffForHumans() : 'baru saja',
+                        'timestamp' => $app->updated_at ? $app->updated_at->timestamp : time(),
+                        'type' => 'info',
+                        'url' => route('mutation.show', $app->id),
+                        'application_id' => $app->id,
+                    ];
+                } elseif ($app->status === 'Dikembalikan') {
+                    $notifications[] = [
+                        'id' => 'notif-app-' . $app->id,
+                        'title' => 'Pengajuan Dikembalikan ke Operator',
+                        'message' => "Pengajuan #{$app->registration_number} ({$studentName}) dikembalikan dengan catatan revisi.",
+                        'time' => $app->updated_at ? $app->updated_at->diffForHumans() : 'baru saja',
+                        'timestamp' => $app->updated_at ? $app->updated_at->timestamp : time(),
+                        'type' => 'danger',
+                        'url' => route('mutation.show', $app->id),
+                        'application_id' => $app->id,
+                    ];
+                } elseif ($app->status === 'Selesai') {
+                    $notifications[] = [
+                        'id' => 'notif-app-' . $app->id,
+                        'title' => 'Surat Mutasi Diterbitkan',
+                        'message' => "Surat Mutasi Digital #{$app->registration_number} ({$studentName}) berhasil diterbitkan.",
+                        'time' => $app->updated_at ? $app->updated_at->diffForHumans() : 'baru saja',
+                        'timestamp' => $app->updated_at ? $app->updated_at->timestamp : time(),
+                        'type' => 'success',
+                        'url' => route('mutation.show', $app->id),
+                        'application_id' => $app->id,
+                    ];
+                }
+            }
+        } else {
+            // Operator Sekolah
+            $schoolId = $user->school_id;
+            $apps = \App\Models\MutationApplication::with(['student'])
+                ->where(function($q) use ($schoolId) {
+                    $q->where('school_origin_id', $schoolId)->orWhere('school_destination_id', $schoolId);
+                })
+                ->orderBy('updated_at', 'desc')
+                ->take(10)
+                ->get();
+
+            foreach ($apps as $app) {
+                $studentName = $app->student ? $app->student->name : 'Siswa';
+                if ($app->status === 'Dikembalikan') {
+                    $notifications[] = [
+                        'id' => 'notif-app-' . $app->id,
+                        'title' => 'Perlu Perbaikan Dokumen',
+                        'message' => "Pengajuan #{$app->registration_number} ({$studentName}) dikembalikan oleh Dinas. Catatan: " . ($app->rejection_note ?: 'Periksa kembali kelengkapan berkas.'),
+                        'time' => $app->updated_at ? $app->updated_at->diffForHumans() : 'baru saja',
+                        'timestamp' => $app->updated_at ? $app->updated_at->timestamp : time(),
+                        'type' => 'danger',
+                        'url' => route('mutation.show', $app->id),
+                        'application_id' => $app->id,
+                    ];
+                } elseif ($app->status === 'Selesai') {
+                    $notifications[] = [
+                        'id' => 'notif-app-' . $app->id,
+                        'title' => 'Surat Mutasi Siap Diunduh',
+                        'message' => "Surat Keterangan Mutasi Digital untuk {$studentName} (#{$app->registration_number}) telah terbit dan siap diunduh.",
+                        'time' => $app->updated_at ? $app->updated_at->diffForHumans() : 'baru saja',
+                        'timestamp' => $app->updated_at ? $app->updated_at->timestamp : time(),
+                        'type' => 'success',
+                        'url' => route('mutation.show', $app->id),
+                        'application_id' => $app->id,
+                    ];
+                } elseif ($app->status === 'Diverifikasi') {
+                    $notifications[] = [
+                        'id' => 'notif-app-' . $app->id,
+                        'title' => 'Berkas Disetujui Dinas',
+                        'message' => "Pengajuan #{$app->registration_number} ({$studentName}) telah disetujui Dinas. Menunggu proses penerbitan surat.",
+                        'time' => $app->updated_at ? $app->updated_at->diffForHumans() : 'baru saja',
+                        'timestamp' => $app->updated_at ? $app->updated_at->timestamp : time(),
+                        'type' => 'info',
+                        'url' => route('mutation.show', $app->id),
+                        'application_id' => $app->id,
+                    ];
+                } elseif ($app->status === 'Diajukan') {
+                    $notifications[] = [
+                        'id' => 'notif-app-' . $app->id,
+                        'title' => 'Dalam Antrean Verifikasi',
+                        'message' => "Pengajuan #{$app->registration_number} ({$studentName}) telah terkirim dan berada dalam antrean verifikasi Dinas.",
+                        'time' => $app->updated_at ? $app->updated_at->diffForHumans() : 'baru saja',
+                        'timestamp' => $app->updated_at ? $app->updated_at->timestamp : time(),
+                        'type' => 'warning',
+                        'url' => route('mutation.show', $app->id),
+                        'application_id' => $app->id,
+                    ];
+                }
+            }
+        }
+
+        usort($notifications, function($a, $b) {
+            return $b['timestamp'] - $a['timestamp'];
+        });
+
+        return $notifications;
     }
 }

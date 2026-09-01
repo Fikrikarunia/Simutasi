@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
+import NotificationDropdown from '@/Components/NotificationDropdown';
+import HelpModal from '@/Components/HelpModal';
 import { 
   LayoutDashboard, 
   ArrowRightLeft, 
@@ -8,8 +10,6 @@ import {
   Settings, 
   LogOut, 
   Search, 
-  Bell, 
-  HelpCircle, 
   Building2, 
   ShieldCheck, 
   UserCheck,
@@ -20,9 +20,16 @@ import {
 } from 'lucide-react';
 
 export default function AuthenticatedLayout({ children, title }) {
-  const { auth, flash } = usePage().props;
+  const { auth, flash, notifications = [] } = usePage().props;
   const user = auth.user;
   const [toasts, setToasts] = useState([]);
+  const [globalSearch, setGlobalSearch] = useState('');
+
+  const handleGlobalSearch = (e) => {
+    if (e.key === 'Enter' && globalSearch.trim()) {
+      router.get(route('mutation.index'), { search: globalSearch });
+    }
+  };
 
   useEffect(() => {
     if (flash?.success) {
@@ -188,20 +195,18 @@ export default function AuthenticatedLayout({ children, title }) {
             <input
               type="text"
               placeholder="Cari data siswa, NISN, atau sekolah..."
+              value={globalSearch}
+              onChange={(e) => setGlobalSearch(e.target.value)}
+              onKeyDown={handleGlobalSearch}
               className="w-full pl-9 pr-4 py-2 bg-slate-100/80 border border-transparent rounded-full text-xs text-slate-700 placeholder-slate-400 focus:bg-white focus:border-sky-500 focus:outline-none transition-all"
             />
           </div>
 
           {/* Right Header Actions */}
-          <div className="flex items-center gap-4">
-            <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-full relative transition-all">
-              <Bell className="w-5 h-5" />
-              <span className="w-2 h-2 bg-rose-500 rounded-full absolute top-1.5 right-1.5 ring-2 ring-white"></span>
-            </button>
-            <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-all">
-              <HelpCircle className="w-5 h-5" />
-            </button>
-            <div className="h-6 w-[1px] bg-slate-200"></div>
+          <div className="flex items-center gap-2 md:gap-3">
+            <NotificationDropdown notifications={notifications} />
+            <HelpModal userRole={user?.role} />
+            <div className="h-6 w-[1px] bg-slate-200 mx-1"></div>
 
             {/* Profile Pill */}
             <div className="flex items-center gap-3">
