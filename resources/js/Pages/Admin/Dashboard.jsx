@@ -165,32 +165,52 @@ export default function AdminDashboard({ stats, applications, filters }) {
                       <p className="text-[11px] text-slate-500">NISN: {app.student?.nisn}</p>
                     </td>
                     <td className="py-3.5 px-4">
-                      <p className="font-semibold text-slate-800">{app.school_origin_name}</p>
-                      <p className="text-[11px] text-slate-500">➔ {app.school_destination_name}</p>
+                      <p className="font-semibold text-slate-800">
+                        {app.school_origin_name}
+                        {app.school_origin_npsn && <span className="text-[10px] text-slate-400 font-normal"> (NPSN: {app.school_origin_npsn})</span>}
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        ➔ {app.school_destination_name}
+                        {app.school_destination_npsn && <span className="text-[10px] text-slate-400 font-normal"> (NPSN: {app.school_destination_npsn})</span>}
+                      </p>
                     </td>
                     <td className="py-3.5 px-4 font-semibold text-slate-700">{app.type}</td>
                     <td className="py-3.5 px-4">{getStatusBadge(app.status)}</td>
                     <td className="py-3.5 px-4 text-center">
-                      <Link
-                        href={route('mutation.show', app.id)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs ${
-                          app.status === 'Diajukan'
-                            ? 'bg-sky-600 hover:bg-sky-700 text-white'
-                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
-                        }`}
-                      >
-                        {app.status === 'Diajukan' ? (
-                          <>
-                            <CheckSquare className="w-3.5 h-3.5" />
-                            Verifikasi
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="w-3.5 h-3.5" />
-                            Lihat Detail
-                          </>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <Link
+                          href={route('mutation.show', app.id)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs ${
+                            app.status === 'Diajukan'
+                              ? 'bg-sky-600 hover:bg-sky-700 text-white'
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                          }`}
+                        >
+                          {app.status === 'Diajukan' ? (
+                            <>
+                              <CheckSquare className="w-3.5 h-3.5" />
+                              Verifikasi
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="w-3.5 h-3.5" />
+                              Detail
+                            </>
+                          )}
+                        </Link>
+                        {app.status === 'Selesai' && app.letter && (
+                          <a
+                            href={route('mutation.download_letter', app.id)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-all shadow-xs inline-flex items-center gap-1"
+                            title="Unduh Surat Digital"
+                          >
+                            <Mail className="w-3.5 h-3.5" />
+                            Surat PDF
+                          </a>
                         )}
-                      </Link>
+                      </div>
                     </td>
                   </tr>
                 ))

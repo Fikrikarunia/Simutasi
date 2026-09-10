@@ -8,23 +8,22 @@ import {
   CheckCircle2, 
   FileText, 
   AlertCircle,
-  Building2
+  Building2,
+  RotateCcw
 } from 'lucide-react';
 
-export default function MutationCreate({ schools, userSchool }) {
-  const defaultSchoolName = userSchool ? userSchool.name : 'SD Negeri Bandung Barat';
-  const defaultSchoolNpsn = userSchool ? (userSchool.npsn || '20200004') : '';
-
+export default function MutationEdit({ application, schools, userSchool }) {
   const { data, setData, post, processing, errors } = useForm({
-    type: 'Masuk',
-    nisn: '',
-    name: '',
-    destination_class: 'Kelas 4',
-    school_origin_name: '',
-    school_origin_npsn: '',
-    school_destination_name: defaultSchoolName,
-    school_destination_npsn: defaultSchoolNpsn,
-    reason: '',
+    _method: 'POST',
+    type: application.type || 'Masuk',
+    nisn: application.student?.nisn || '',
+    name: application.student?.name || '',
+    destination_class: application.destination_class || 'Kelas 4',
+    school_origin_name: application.school_origin_name || '',
+    school_origin_npsn: application.school_origin_npsn || '',
+    school_destination_name: application.school_destination_name || '',
+    school_destination_npsn: application.school_destination_npsn || '',
+    reason: application.reason || '',
     surat_pindah: null,
     rapor: null,
     kk: null,
@@ -37,25 +36,7 @@ export default function MutationCreate({ schools, userSchool }) {
   });
 
   const handleTypeSelect = (selectedType) => {
-    if (selectedType === 'Masuk') {
-      setData((prev) => ({
-        ...prev,
-        type: 'Masuk',
-        school_destination_name: defaultSchoolName,
-        school_destination_npsn: defaultSchoolNpsn,
-        school_origin_name: prev.school_origin_name === defaultSchoolName ? '' : prev.school_origin_name,
-        school_origin_npsn: prev.school_origin_npsn === defaultSchoolNpsn ? '' : prev.school_origin_npsn,
-      }));
-    } else {
-      setData((prev) => ({
-        ...prev,
-        type: 'Keluar',
-        school_origin_name: defaultSchoolName,
-        school_origin_npsn: defaultSchoolNpsn,
-        school_destination_name: prev.school_destination_name === defaultSchoolName ? '' : prev.school_destination_name,
-        school_destination_npsn: prev.school_destination_npsn === defaultSchoolNpsn ? '' : prev.school_destination_npsn,
-      }));
-    }
+    setData('type', selectedType);
   };
 
   const handleFileChange = (e, field) => {
@@ -68,25 +49,37 @@ export default function MutationCreate({ schools, userSchool }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    post(route('mutation.store'));
+    post(route('mutation.update', application.id));
   };
 
   return (
-    <AuthenticatedLayout title="Pengajuan Mutasi Siswa">
-      <Head title="Pengajuan Mutasi Siswa - SIMUTASI" />
+    <AuthenticatedLayout title="Edit & Perbaiki Pengajuan Mutasi">
+      <Head title={`Edit Pengajuan #${application.registration_number} - SIMUTASI`} />
 
       {/* Top Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <Link href="/dashboard" className="inline-flex items-center gap-1 text-xs font-bold text-sky-600 hover:underline mb-2">
-            <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Dashboard
+          <Link href={route('mutation.show', application.id)} className="inline-flex items-center gap-1 text-xs font-bold text-sky-600 hover:underline mb-2">
+            <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Detail Pengajuan
           </Link>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Pengajuan Mutasi Siswa</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+            Perbaiki Pengajuan Mutasi #{application.registration_number}
+          </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Lengkapi formulir di bawah ini untuk mengajukan permohonan mutasi masuk atau keluar.
+            Edit data siswa, informasi sekolah, atau unggah dokumen pengganti secara langsung tanpa perlu membuat pengajuan baru.
           </p>
         </div>
       </div>
+
+      {/* Warning Box for Rejection Note */}
+      {application.rejection_note && (
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-xs shadow-xs">
+          <h4 className="font-bold flex items-center gap-2 mb-1 text-amber-800">
+            <RotateCcw className="w-4 h-4" /> Catatan Perbaikan dari Admin Dinas:
+          </h4>
+          <p className="ml-6 font-semibold">{application.rejection_note}</p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
         {/* Error Notification Alert Banner */}
@@ -94,9 +87,9 @@ export default function MutationCreate({ schools, userSchool }) {
           <div className="bg-rose-50 border-2 border-rose-200 text-rose-900 p-4 rounded-2xl flex items-start gap-3 shadow-xs animate-in fade-in duration-200">
             <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <h4 className="font-extrabold text-sm text-rose-900">Pengajuan Belum Dapat Dikirim</h4>
+              <h4 className="font-extrabold text-sm text-rose-900">Perbaikan Belum Dapat Disimpan</h4>
               <p className="text-xs text-rose-700 font-medium">
-                Terdapat beberapa bidang atau dokumen persyaratan yang belum diisi atau tidak sesuai. Silakan periksa pesan di bawah:
+                Silakan periksa kembali pesan kesalahan di bawah ini:
               </p>
               <ul className="list-disc list-inside text-xs text-rose-700 space-y-0.5 pt-1">
                 {Object.entries(errors).map(([key, msg]) => (
@@ -125,7 +118,7 @@ export default function MutationCreate({ schools, userSchool }) {
                 <input type="radio" name="type" checked={data.type === 'Masuk'} onChange={() => {}} className="text-sky-600" />
                 <div>
                   <h3 className="font-bold text-sm">Mutasi Masuk</h3>
-                  <p className="text-xs text-slate-500">Pindah masuk ke {defaultSchoolName}</p>
+                  <p className="text-xs text-slate-500">Pindah masuk ke sekolah ini</p>
                 </div>
               </div>
               <ArrowRightLeft className="w-5 h-5 text-sky-600" />
@@ -141,20 +134,19 @@ export default function MutationCreate({ schools, userSchool }) {
                 <input type="radio" name="type" checked={data.type === 'Keluar'} onChange={() => {}} className="text-sky-600" />
                 <div>
                   <h3 className="font-bold text-sm">Mutasi Keluar</h3>
-                  <p className="text-xs text-slate-500">Pindah keluar dari {defaultSchoolName}</p>
+                  <p className="text-xs text-slate-500">Pindah keluar dari sekolah ini</p>
                 </div>
               </div>
               <ArrowRightLeft className="w-5 h-5 text-amber-500" />
             </label>
           </div>
-          {errors.type && <p className="text-[11px] text-rose-600 mt-2 font-medium">{errors.type}</p>}
         </div>
 
         {/* 2. Data Siswa & Sekolah Section */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
           <h2 className="font-bold text-sm text-slate-900 mb-2 flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-700 text-xs flex items-center justify-center font-bold">2</span>
-            Data Siswa & Sekolah
+            Edit Data Siswa & Sekolah
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -166,11 +158,7 @@ export default function MutationCreate({ schools, userSchool }) {
                 value={data.nisn}
                 onChange={(e) => setData('nisn', e.target.value)}
                 placeholder="Masukkan 10 digit NISN"
-                className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-800 focus:outline-none transition-all ${
-                  errors.nisn 
-                    ? 'bg-rose-50/50 border-2 border-rose-300 focus:border-rose-600' 
-                    : 'bg-slate-50 border border-slate-200 focus:bg-white focus:border-sky-600'
-                }`}
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:border-sky-600 focus:outline-none"
                 required
               />
               {errors.nisn && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.nisn}</p>}
@@ -183,11 +171,7 @@ export default function MutationCreate({ schools, userSchool }) {
                 value={data.name}
                 onChange={(e) => setData('name', e.target.value)}
                 placeholder="Nama lengkap sesuai dokumen"
-                className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-800 focus:outline-none transition-all ${
-                  errors.name 
-                    ? 'bg-rose-50/50 border-2 border-rose-300 focus:border-rose-600' 
-                    : 'bg-slate-50 border border-slate-200 focus:bg-white focus:border-sky-600'
-                }`}
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:border-sky-600 focus:outline-none"
                 required
               />
               {errors.name && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.name}</p>}
@@ -198,11 +182,7 @@ export default function MutationCreate({ schools, userSchool }) {
               <select
                 value={data.destination_class}
                 onChange={(e) => setData('destination_class', e.target.value)}
-                className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-800 focus:outline-none transition-all ${
-                  errors.destination_class 
-                    ? 'bg-rose-50/50 border-2 border-rose-300 focus:border-rose-600' 
-                    : 'bg-slate-50 border border-slate-200 focus:bg-white focus:border-sky-600'
-                }`}
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:border-sky-600 focus:outline-none"
               >
                 <option value="Kelas 1">Kelas 1</option>
                 <option value="Kelas 2">Kelas 2</option>
@@ -214,7 +194,6 @@ export default function MutationCreate({ schools, userSchool }) {
                 <option value="Kelas 8">Kelas 8 (SMP)</option>
                 <option value="Kelas 9">Kelas 9 (SMP)</option>
               </select>
-              {errors.destination_class && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.destination_class}</p>}
             </div>
 
             {/* Sekolah Asal Details */}
@@ -222,11 +201,6 @@ export default function MutationCreate({ schools, userSchool }) {
               <div className="flex items-center gap-2 text-xs font-bold text-slate-900 border-b border-slate-200 pb-2">
                 <Building2 className="w-4 h-4 text-sky-600" />
                 Sekolah Asal
-                {data.type === 'Keluar' && (
-                  <span className="ml-auto text-[10px] px-2 py-0.5 bg-sky-100 text-sky-800 font-bold rounded-full">
-                    Otomatis Akun Login
-                  </span>
-                )}
               </div>
 
               <div>
@@ -235,11 +209,8 @@ export default function MutationCreate({ schools, userSchool }) {
                   type="text"
                   value={data.school_origin_name}
                   onChange={(e) => setData('school_origin_name', e.target.value)}
-                  readOnly={data.type === 'Keluar' && !!userSchool}
                   placeholder="Contoh: SDN 1 Lembang"
-                  className={`w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-800 focus:outline-none ${
-                    data.type === 'Keluar' && !!userSchool ? 'bg-slate-200/70 border border-slate-300 font-bold' : 'bg-white border border-slate-200 focus:border-sky-600'
-                  }`}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:border-sky-600 focus:outline-none"
                   required
                 />
                 {errors.school_origin_name && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.school_origin_name}</p>}
@@ -252,13 +223,9 @@ export default function MutationCreate({ schools, userSchool }) {
                   maxLength={10}
                   value={data.school_origin_npsn}
                   onChange={(e) => setData('school_origin_npsn', e.target.value)}
-                  readOnly={data.type === 'Keluar' && !!userSchool}
                   placeholder="Contoh: 20200001"
-                  className={`w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-800 focus:outline-none ${
-                    data.type === 'Keluar' && !!userSchool ? 'bg-slate-200/70 border border-slate-300 font-bold' : 'bg-white border border-slate-200 focus:border-sky-600'
-                  }`}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:border-sky-600 focus:outline-none"
                 />
-                {errors.school_origin_npsn && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.school_origin_npsn}</p>}
               </div>
             </div>
 
@@ -267,11 +234,6 @@ export default function MutationCreate({ schools, userSchool }) {
               <div className="flex items-center gap-2 text-xs font-bold text-slate-900 border-b border-slate-200 pb-2">
                 <Building2 className="w-4 h-4 text-emerald-600" />
                 Sekolah Tujuan
-                {data.type === 'Masuk' && (
-                  <span className="ml-auto text-[10px] px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded-full">
-                    Otomatis Akun Login
-                  </span>
-                )}
               </div>
 
               <div>
@@ -280,11 +242,8 @@ export default function MutationCreate({ schools, userSchool }) {
                   type="text"
                   value={data.school_destination_name}
                   onChange={(e) => setData('school_destination_name', e.target.value)}
-                  readOnly={data.type === 'Masuk' && !!userSchool}
                   placeholder="Contoh: SMPN 2 Ngamprah"
-                  className={`w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-800 focus:outline-none ${
-                    data.type === 'Masuk' && !!userSchool ? 'bg-slate-200/70 border border-slate-300 font-bold' : 'bg-white border border-slate-200 focus:border-sky-600'
-                  }`}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:border-sky-600 focus:outline-none"
                   required
                 />
                 {errors.school_destination_name && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.school_destination_name}</p>}
@@ -297,13 +256,9 @@ export default function MutationCreate({ schools, userSchool }) {
                   maxLength={10}
                   value={data.school_destination_npsn}
                   onChange={(e) => setData('school_destination_npsn', e.target.value)}
-                  readOnly={data.type === 'Masuk' && !!userSchool}
                   placeholder="Contoh: 20200002"
-                  className={`w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-800 focus:outline-none ${
-                    data.type === 'Masuk' && !!userSchool ? 'bg-slate-200/70 border border-slate-300 font-bold' : 'bg-white border border-slate-200 focus:border-sky-600'
-                  }`}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:border-sky-600 focus:outline-none"
                 />
-                {errors.school_destination_npsn && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.school_destination_npsn}</p>}
               </div>
             </div>
 
@@ -320,97 +275,92 @@ export default function MutationCreate({ schools, userSchool }) {
           </div>
         </div>
 
-        {/* 3. Unggah Dokumen Section */}
+        {/* 3. Unggah Ulang Dokumen Section (Opsional jika ingin mengganti file) */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-700 text-xs flex items-center justify-center font-bold">3</span>
-              Unggah Dokumen Persyaratan
+              <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-800 text-xs flex items-center justify-center font-bold">3</span>
+              Perbarui Dokumen Persyaratan (Opsional)
             </h2>
-            <span className="text-[11px] font-semibold text-slate-400">Format: PDF, JPG, PNG. Max 2MB</span>
+            <span className="text-[11px] font-semibold text-slate-400">Pilih file baru jika ada perbaikan dokumen</span>
           </div>
 
-          <div className="space-y-4">
-            {/* File 1: Surat Keterangan Pindah */}
+          {/* List current documents */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            {application.documents?.map((doc) => (
+              <div key={doc.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                <p className="font-bold text-slate-900">{doc.document_label}</p>
+                <p className="text-[11px] text-slate-500 truncate mt-0.5">{doc.original_name}</p>
+                <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded font-bold bg-slate-200 text-slate-700">
+                  {doc.is_valid === false ? '❌ Perlu Diganti' : doc.is_valid === true ? '✅ Sesuai' : 'Dokumen Lama'}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-4 pt-2">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Surat Keterangan Pindah *</label>
-              <div className={`border-2 border-dashed rounded-xl p-4 text-center transition-all cursor-pointer relative ${
-                errors.surat_pindah 
-                  ? 'border-rose-400 bg-rose-50/40 hover:bg-rose-50/70' 
-                  : 'border-slate-200 hover:border-sky-500 bg-slate-50/50 hover:bg-sky-50/30'
-              }`}>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Unggah Baru: Surat Keterangan Pindah</label>
+              <div className="border-2 border-dashed border-slate-200 hover:border-sky-500 rounded-xl p-3 text-center bg-slate-50/50 relative cursor-pointer">
                 <input
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png"
                   onChange={(e) => handleFileChange(e, 'surat_pindah')}
                   className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                 />
-                <Upload className={`w-6 h-6 mx-auto mb-1 ${errors.surat_pindah ? 'text-rose-500' : 'text-slate-400'}`} />
-                <p className={`text-xs font-semibold ${errors.surat_pindah ? 'text-rose-700' : 'text-sky-600'}`}>
-                  {previews.surat_pindah ? `📄 ${previews.surat_pindah}` : 'Klik untuk mengunggah atau seret file Surat Pindah ke sini'}
+                <Upload className="w-5 h-5 mx-auto mb-1 text-slate-400" />
+                <p className="text-xs font-semibold text-sky-600">
+                  {previews.surat_pindah ? `📄 ${previews.surat_pindah}` : 'Klik untuk ganti file Surat Pindah'}
                 </p>
               </div>
-              {errors.surat_pindah && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.surat_pindah}</p>}
             </div>
 
-            {/* File 2: Fotokopi Rapor */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Fotokopi Rapor (Halaman Biodata & Nilai Terakhir) *</label>
-              <div className={`border-2 border-dashed rounded-xl p-4 text-center transition-all cursor-pointer relative ${
-                errors.rapor 
-                  ? 'border-rose-400 bg-rose-50/40 hover:bg-rose-50/70' 
-                  : 'border-slate-200 hover:border-sky-500 bg-slate-50/50 hover:bg-sky-50/30'
-              }`}>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Unggah Baru: Fotokopi Rapor (Legalisir)</label>
+              <div className="border-2 border-dashed border-slate-200 hover:border-sky-500 rounded-xl p-3 text-center bg-slate-50/50 relative cursor-pointer">
                 <input
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png"
                   onChange={(e) => handleFileChange(e, 'rapor')}
                   className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                 />
-                <Upload className={`w-6 h-6 mx-auto mb-1 ${errors.rapor ? 'text-rose-500' : 'text-slate-400'}`} />
-                <p className={`text-xs font-semibold ${errors.rapor ? 'text-rose-700' : 'text-sky-600'}`}>
-                  {previews.rapor ? `📄 ${previews.rapor}` : 'Klik untuk mengunggah atau seret file Fotokopi Rapor ke sini'}
+                <Upload className="w-5 h-5 mx-auto mb-1 text-slate-400" />
+                <p className="text-xs font-semibold text-sky-600">
+                  {previews.rapor ? `📄 ${previews.rapor}` : 'Klik untuk ganti file Fotokopi Rapor'}
                 </p>
               </div>
-              {errors.rapor && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.rapor}</p>}
             </div>
 
-            {/* File 3: Kartu Keluarga */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Kartu Keluarga (KK) *</label>
-              <div className={`border-2 border-dashed rounded-xl p-4 text-center transition-all cursor-pointer relative ${
-                errors.kk 
-                  ? 'border-rose-400 bg-rose-50/40 hover:bg-rose-50/70' 
-                  : 'border-slate-200 hover:border-sky-500 bg-slate-50/50 hover:bg-sky-50/30'
-              }`}>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Unggah Baru: Kartu Keluarga (KK)</label>
+              <div className="border-2 border-dashed border-slate-200 hover:border-sky-500 rounded-xl p-3 text-center bg-slate-50/50 relative cursor-pointer">
                 <input
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png"
                   onChange={(e) => handleFileChange(e, 'kk')}
                   className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                 />
-                <Upload className={`w-6 h-6 mx-auto mb-1 ${errors.kk ? 'text-rose-500' : 'text-slate-400'}`} />
-                <p className={`text-xs font-semibold ${errors.kk ? 'text-rose-700' : 'text-sky-600'}`}>
-                  {previews.kk ? `📄 ${previews.kk}` : 'Klik untuk mengunggah atau seret file Kartu Keluarga (KK) ke sini'}
+                <Upload className="w-5 h-5 mx-auto mb-1 text-slate-400" />
+                <p className="text-xs font-semibold text-sky-600">
+                  {previews.kk ? `📄 ${previews.kk}` : 'Klik untuk ganti file Kartu Keluarga'}
                 </p>
               </div>
-              {errors.kk && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.kk}</p>}
             </div>
           </div>
         </div>
 
-        {/* Section 4: Submit Confirmation Box */}
+        {/* Action Button Box */}
         <div className="bg-sky-50 border border-sky-200 p-5 rounded-2xl flex items-center justify-between">
           <div>
-            <h3 className="font-extrabold text-sm text-sky-950">Konfirmasi Pengajuan</h3>
-            <p className="text-xs text-sky-700">Pastikan semua data dan dokumen telah sesuai sebelum mengirim pengajuan.</p>
+            <h3 className="font-extrabold text-sm text-sky-950">Simpan & Ajukan Ulang</h3>
+            <p className="text-xs text-sky-700">Perubahan akan disimpan dan status pengajuan kembali menjadi 'Diajukan' untuk diverifikasi ulang.</p>
           </div>
           <button
             type="submit"
             disabled={processing}
             className="px-6 py-3 bg-sky-700 hover:bg-sky-800 active:bg-sky-900 text-white font-bold text-xs rounded-xl shadow-md shadow-sky-600/30 transition-all cursor-pointer disabled:opacity-50"
           >
-            {processing ? 'Mengirim...' : 'Kirim Pengajuan'}
+            {processing ? 'Menyimpan...' : 'Simpan Perubahan & Ajukan Ulang'}
           </button>
         </div>
       </form>

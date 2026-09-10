@@ -30,6 +30,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/mutation/create', [MutationApplicationController::class, 'create'])->name('mutation.create');
     Route::post('/mutation', [MutationApplicationController::class, 'store'])->name('mutation.store');
     Route::get('/mutation/{id}', [MutationApplicationController::class, 'show'])->name('mutation.show');
+    Route::get('/mutation/{id}/edit', [MutationApplicationController::class, 'edit'])->name('mutation.edit');
     Route::post('/mutation/{id}/verify', [MutationApplicationController::class, 'verify'])->name('mutation.verify');
     Route::post('/mutation/{id}/update', [MutationApplicationController::class, 'update'])->name('mutation.update');
     Route::get('/document/{id}/download', [MutationApplicationController::class, 'downloadDocument'])->name('document.download');

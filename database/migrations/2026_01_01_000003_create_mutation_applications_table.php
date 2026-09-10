@@ -16,9 +16,11 @@ return new class extends Migration
             
             $table->foreignId('school_origin_id')->nullable()->constrained('schools')->onDelete('set null');
             $table->string('school_origin_name');
+            $table->string('school_origin_npsn')->nullable();
             
             $table->foreignId('school_destination_id')->nullable()->constrained('schools')->onDelete('set null');
             $table->string('school_destination_name');
+            $table->string('school_destination_npsn')->nullable();
             
             $table->string('destination_class');
             $table->text('reason')->nullable();

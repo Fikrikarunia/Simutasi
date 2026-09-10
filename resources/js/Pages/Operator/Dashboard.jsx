@@ -133,6 +133,15 @@ export default function OperatorDashboard({ stats, applications, school }) {
                     <td className="py-3.5 px-4">{getStatusBadge(app.status)}</td>
                     <td className="py-3.5 px-4 text-center">
                       <div className="flex items-center justify-center gap-2">
+                        {app.status === 'Dikembalikan' && (
+                          <Link
+                            href={route('mutation.edit', app.id)}
+                            className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs transition-all shadow-xs inline-flex items-center gap-1"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            Edit Perbaikan
+                          </Link>
+                        )}
                         <Link
                           href={route('mutation.show', app.id)}
                           className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs transition-all border border-slate-200 inline-flex items-center gap-1"

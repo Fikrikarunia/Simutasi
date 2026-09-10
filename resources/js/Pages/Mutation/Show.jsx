@@ -130,27 +130,47 @@ export default function MutationShow({ application, userRole }) {
           <p className="text-xs text-slate-500 mt-1">Tinjau kesesuaian dokumen untuk permohonan mutasi {application.type}.</p>
         </div>
 
-        {/* Action button if letter ready */}
-        {application.status === 'Selesai' && application.letter && (
-          <a
-            href={route('mutation.download_letter', application.id)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md transition-all"
-          >
-            <Download className="w-4 h-4" />
-            Unduh Surat Digital (PDF)
-          </a>
-        )}
+        {/* Action button if letter ready or edit button if Dikembalikan */}
+        <div className="flex items-center gap-2">
+          {application.status === 'Dikembalikan' && (
+            <Link
+              href={route('mutation.edit', application.id)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs shadow-md transition-all"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Edit & Perbaiki Pengajuan
+            </Link>
+          )}
+
+          {application.letter && (
+            <a
+              href={route('mutation.download_letter', application.id)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md transition-all"
+            >
+              <Download className="w-4 h-4" />
+              Unduh Surat Digital (PDF)
+            </a>
+          )}
+        </div>
       </div>
 
       {/* Rejection Note Warning if status is Dikembalikan */}
       {application.status === 'Dikembalikan' && application.rejection_note && (
-        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-xs">
-          <h4 className="font-bold flex items-center gap-2 mb-1 text-amber-800">
-            <RotateCcw className="w-4 h-4" /> Catatan Perbaikan dari Admin Dinas:
-          </h4>
-          <p className="ml-6 font-medium">{application.rejection_note}</p>
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h4 className="font-bold flex items-center gap-2 mb-1 text-amber-800">
+              <RotateCcw className="w-4 h-4" /> Catatan Perbaikan dari Admin Dinas:
+            </h4>
+            <p className="ml-6 font-semibold text-slate-800">{application.rejection_note}</p>
+          </div>
+          <Link
+            href={route('mutation.edit', application.id)}
+            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-xs shrink-0"
+          >
+            Edit Pengajuan Langsung
+          </Link>
         </div>
       )}
 
@@ -160,19 +180,24 @@ export default function MutationShow({ application, userRole }) {
         <div className="lg:col-span-6 space-y-6">
           {/* Data Siswa Card */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Data Siswa</h2>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Data Siswa & Sekolah</h2>
             <div className="grid grid-cols-2 gap-4 text-xs">
               <div>
                 <p className="text-slate-400 font-medium">Nama Lengkap</p>
                 <p className="font-bold text-slate-900 text-sm mt-0.5">{application.student?.name}</p>
               </div>
               <div>
-                <p className="text-slate-400 font-medium">NISN</p>
+                <p className="text-slate-400 font-medium">NISN Siswa</p>
                 <p className="font-bold text-slate-900 text-sm mt-0.5">{application.student?.nisn}</p>
               </div>
               <div>
                 <p className="text-slate-400 font-medium">Sekolah Asal</p>
-                <p className="font-semibold text-slate-800 mt-0.5">{application.school_origin_name}</p>
+                <p className="font-semibold text-slate-800 mt-0.5">
+                  {application.school_origin_name}
+                  {application.school_origin_npsn && (
+                    <span className="block text-[11px] font-normal text-slate-500">NPSN: {application.school_origin_npsn}</span>
+                  )}
+                </p>
               </div>
               <div>
                 <p className="text-slate-400 font-medium">Tingkat / Kelas</p>
@@ -180,7 +205,12 @@ export default function MutationShow({ application, userRole }) {
               </div>
               <div className="col-span-2">
                 <p className="text-slate-400 font-medium">Sekolah Tujuan</p>
-                <p className="font-semibold text-slate-800 mt-0.5">{application.school_destination_name}</p>
+                <p className="font-semibold text-slate-800 mt-0.5">
+                  {application.school_destination_name}
+                  {application.school_destination_npsn && (
+                    <span className="block text-[11px] font-normal text-slate-500">NPSN: {application.school_destination_npsn}</span>
+                  )}
+                </p>
               </div>
             </div>
           </div>

@@ -143,12 +143,12 @@
         <tr>
             <td>Asal Sekolah</td>
             <td>:</td>
-            <td>{{ $app->school_origin_name }}</td>
+            <td>{{ $app->school_origin_name }} {{ $app->school_origin_npsn ? '(NPSN: '.$app->school_origin_npsn.')' : '' }}</td>
         </tr>
         <tr>
             <td>Pindah Sekolah Ke</td>
             <td>:</td>
-            <td><strong>{{ $app->school_destination_name }}</strong></td>
+            <td><strong>{{ $app->school_destination_name }} {{ $app->school_destination_npsn ? '(NPSN: '.$app->school_destination_npsn.')' : '' }}</strong></td>
         </tr>
         <tr>
             <td>Alasan Pindah Sekolah</td>

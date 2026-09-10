@@ -69,7 +69,9 @@ class MutationApplicationController extends Controller
             'name' => 'required|string|max:255',
             'destination_class' => 'required|string',
             'school_origin_name' => 'required|string|max:255',
+            'school_origin_npsn' => 'nullable|string|max:20',
             'school_destination_name' => 'required|string|max:255',
+            'school_destination_npsn' => 'nullable|string|max:20',
             'reason' => 'nullable|string',
             'surat_pindah' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'rapor' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
@@ -82,11 +84,13 @@ class MutationApplicationController extends Controller
             'in' => 'Pilihan :attribute tidak sesuai.',
         ], [
             'type' => 'Jenis Mutasi',
-            'nisn' => 'NISN',
+            'nisn' => 'NISN Siswa',
             'name' => 'Nama Lengkap Siswa',
             'destination_class' => 'Kelas Tujuan',
             'school_origin_name' => 'Sekolah Asal',
+            'school_origin_npsn' => 'NPSN Sekolah Asal',
             'school_destination_name' => 'Sekolah Tujuan',
+            'school_destination_npsn' => 'NPSN Sekolah Tujuan',
             'reason' => 'Alasan Mutasi',
             'surat_pindah' => 'Dokumen Surat Keterangan Pindah',
             'rapor' => 'Dokumen Fotokopi Rapor',
@@ -124,8 +128,10 @@ class MutationApplicationController extends Controller
             'student_id' => $student->id,
             'school_origin_id' => $schoolOrigin ? $schoolOrigin->id : ($request->type === 'Keluar' ? $user->school_id : null),
             'school_origin_name' => $request->school_origin_name,
+            'school_origin_npsn' => $request->school_origin_npsn,
             'school_destination_id' => $schoolDest ? $schoolDest->id : ($request->type === 'Masuk' ? $user->school_id : null),
             'school_destination_name' => $request->school_destination_name,
+            'school_destination_npsn' => $request->school_destination_npsn,
             'destination_class' => $request->destination_class,
             'reason' => $request->reason,
             'status' => 'Diajukan',
@@ -257,18 +263,99 @@ class MutationApplicationController extends Controller
         }
     }
 
-    public function update(Request $request, $id)
+    public function edit($id)
     {
-        $application = MutationApplication::with('documents')->findOrFail($id);
+        $application = MutationApplication::with(['student', 'schoolOrigin', 'schoolDestination', 'documents'])->findOrFail($id);
         $user = Auth::user();
 
-        if ($application->operator_user_id !== $user->id && !$user->isAdminDinas()) {
+        if ($application->operator_user_id !== $user->id && !$user->isAdminDinas() && !$user->isSuperAdmin()) {
             abort(403, 'Akses ditolak.');
         }
 
-        // Resubmit updated files
-        $documents = ['surat_pindah', 'rapor', 'kk'];
-        foreach ($documents as $key) {
+        $schools = School::orderBy('name')->get();
+
+        return Inertia::render('Mutation/Edit', [
+            'application' => $application,
+            'schools' => $schools,
+            'userSchool' => $user->school,
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $application = MutationApplication::with(['student', 'documents'])->findOrFail($id);
+        $user = Auth::user();
+
+        if ($application->operator_user_id !== $user->id && !$user->isAdminDinas() && !$user->isSuperAdmin()) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        $request->validate([
+            'type' => 'required|in:Masuk,Keluar',
+            'nisn' => 'required|string|size:10',
+            'name' => 'required|string|max:255',
+            'destination_class' => 'required|string',
+            'school_origin_name' => 'required|string|max:255',
+            'school_origin_npsn' => 'nullable|string|max:20',
+            'school_destination_name' => 'required|string|max:255',
+            'school_destination_npsn' => 'nullable|string|max:20',
+            'reason' => 'nullable|string',
+            'surat_pindah' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'rapor' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'kk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+        ], [
+            'required' => ':attribute wajib diisi.',
+            'size' => ':attribute harus berisi tepat :size digit.',
+            'max' => ':attribute tidak boleh melebihi :max karakter / 2MB.',
+            'mimes' => ':attribute harus berformat PDF, JPG, JPEG, atau PNG.',
+            'in' => 'Pilihan :attribute tidak sesuai.',
+        ], [
+            'type' => 'Jenis Mutasi',
+            'nisn' => 'NISN Siswa',
+            'name' => 'Nama Lengkap Siswa',
+            'destination_class' => 'Kelas Tujuan',
+            'school_origin_name' => 'Sekolah Asal',
+            'school_origin_npsn' => 'NPSN Sekolah Asal',
+            'school_destination_name' => 'Sekolah Tujuan',
+            'school_destination_npsn' => 'NPSN Sekolah Tujuan',
+            'reason' => 'Alasan Mutasi',
+        ]);
+
+        // Update Student
+        if ($application->student) {
+            $application->student->update([
+                'nisn' => $request->nisn,
+                'name' => $request->name,
+                'current_class' => $request->destination_class,
+            ]);
+        }
+
+        $schoolOrigin = School::where('name', 'like', "%{$request->school_origin_name}%")->first();
+        $schoolDest = School::where('name', 'like', "%{$request->school_destination_name}%")->first();
+
+        $statusBefore = $application->status;
+        $application->update([
+            'type' => $request->type,
+            'school_origin_id' => $schoolOrigin ? $schoolOrigin->id : ($request->type === 'Keluar' ? $user->school_id : null),
+            'school_origin_name' => $request->school_origin_name,
+            'school_origin_npsn' => $request->school_origin_npsn,
+            'school_destination_id' => $schoolDest ? $schoolDest->id : ($request->type === 'Masuk' ? $user->school_id : null),
+            'school_destination_name' => $request->school_destination_name,
+            'school_destination_npsn' => $request->school_destination_npsn,
+            'destination_class' => $request->destination_class,
+            'reason' => $request->reason,
+            'status' => 'Diajukan',
+            'rejection_note' => null,
+        ]);
+
+        // Resubmit updated files if uploaded
+        $documents = [
+            'surat_pindah' => 'Surat Pindah dari Sekolah Asal',
+            'rapor' => 'Fotokopi Rapor (Legalisir)',
+            'kk' => 'Kartu Keluarga (KK)',
+        ];
+
+        foreach ($documents as $key => $label) {
             if ($request->hasFile($key)) {
                 $file = $request->file($key);
                 $path = $file->store("mutation_documents/{$application->id}", 'public');
@@ -290,7 +377,7 @@ class MutationApplicationController extends Controller
                     ApplicationDocument::create([
                         'mutation_application_id' => $application->id,
                         'document_type' => $key,
-                        'document_label' => ucfirst(str_replace('_', ' ', $key)),
+                        'document_label' => $label,
                         'file_path' => $path,
                         'original_name' => $file->getClientOriginalName(),
                         'file_size' => $file->getSize(),
@@ -301,23 +388,17 @@ class MutationApplicationController extends Controller
             }
         }
 
-        $statusBefore = $application->status;
-        $application->update([
-            'status' => 'Diajukan',
-            'rejection_note' => null,
-        ]);
-
         AuditTrail::create([
             'mutation_application_id' => $application->id,
             'user_id' => $user->id,
-            'action' => 'Perbaikan Dokumen',
+            'action' => 'Perbaikan Pengajuan',
             'status_before' => $statusBefore,
             'status_after' => 'Diajukan',
-            'description' => "Operator sekolah memperbarui dokumen persyaratan dan mengajukan kembali.",
+            'description' => "Pengajuan mutasi diperbarui oleh {$user->name} dan diajukan kembali untuk verifikasi.",
             'ip_address' => $request->ip(),
         ]);
 
-        return redirect()->route('dashboard')->with('success', 'Dokumen berhasil diperbarui dan dikirim ulang untuk verifikasi.');
+        return redirect()->route('mutation.show', $application->id)->with('success', 'Pengajuan mutasi berhasil diperbarui dan diajukan kembali.');
     }
 
     public function downloadDocument($id)
