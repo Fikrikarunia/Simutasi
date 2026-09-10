@@ -39,6 +39,16 @@ export default function MutationEdit({ application, schools, userSchool }) {
     setData('type', selectedType);
   };
 
+  const handleDestinationChange = (e) => {
+    const val = e.target.value;
+    const matched = schools ? schools.find((s) => s.name.toLowerCase() === val.toLowerCase()) : null;
+    setData((prev) => ({
+      ...prev,
+      school_destination_name: val,
+      school_destination_npsn: matched ? matched.npsn : prev.school_destination_npsn,
+    }));
+  };
+
   const handleFileChange = (e, field) => {
     const file = e.target.files[0];
     if (file) {
@@ -149,21 +159,82 @@ export default function MutationEdit({ application, schools, userSchool }) {
             Edit Data Siswa & Sekolah
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">NISN Siswa *</label>
-              <input
-                type="text"
-                maxLength={10}
-                value={data.nisn}
-                onChange={(e) => setData('nisn', e.target.value)}
-                placeholder="Masukkan 10 digit NISN"
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:border-sky-600 focus:outline-none"
-                required
-              />
-              {errors.nisn && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.nisn}</p>}
+          {/* Baris 1: NISN Siswa & Sekolah Tujuan dibarengkan */}
+          <div className="p-4 bg-sky-50/60 rounded-2xl border border-sky-100 space-y-3">
+            <div className="flex items-center justify-between border-b border-sky-200/60 pb-2">
+              <span className="text-xs font-bold text-sky-950 flex items-center gap-1.5">
+                <Building2 className="w-4 h-4 text-sky-600" />
+                NISN Siswa & Sekolah Tujuan
+              </span>
+              <span className="text-[10px] px-2 py-0.5 bg-sky-200/70 text-sky-900 font-bold rounded-full">
+                Form Utama
+              </span>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  NISN Siswa *
+                </label>
+                <input
+                  type="text"
+                  maxLength={10}
+                  value={data.nisn}
+                  onChange={(e) => setData('nisn', e.target.value)}
+                  placeholder="Masukkan 10 digit NISN"
+                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:border-sky-600 focus:outline-none shadow-xs"
+                  required
+                />
+                {errors.nisn && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.nisn}</p>}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                  <span>Nama Sekolah Tujuan *</span>
+                  {data.school_destination_npsn && (
+                    <span className="text-[10px] text-sky-700 font-bold bg-sky-100 px-1.5 py-0.5 rounded">
+                      NPSN: {data.school_destination_npsn}
+                    </span>
+                  )}
+                </label>
+                <div className="relative">
+                  <input
+                    list="edit-schools-destination-list"
+                    type="text"
+                    value={data.school_destination_name}
+                    onChange={handleDestinationChange}
+                    placeholder="Pilih atau cari SD / SMP tujuan..."
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:border-sky-600 focus:outline-none shadow-xs"
+                    required
+                  />
+                  <datalist id="edit-schools-destination-list">
+                    {schools && schools.map((sch) => (
+                      <option key={sch.id} value={sch.name}>
+                        {sch.jenjang} - NPSN: {sch.npsn} - Kec. {sch.kecamatan || '-'}
+                      </option>
+                    ))}
+                  </datalist>
+                </div>
+                {errors.school_destination_name && (
+                  <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.school_destination_name}</p>
+                )}
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="text-[11px] text-slate-500">NPSN Tujuan:</span>
+                  <input
+                    type="text"
+                    maxLength={10}
+                    value={data.school_destination_npsn}
+                    onChange={(e) => setData('school_destination_npsn', e.target.value)}
+                    placeholder="NPSN (otomatis dari pilihan)"
+                    className="flex-1 px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-medium text-slate-700 focus:border-sky-600 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Baris 2: Nama Siswa & Tingkat Kelas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap Siswa *</label>
               <input
@@ -177,40 +248,50 @@ export default function MutationEdit({ application, schools, userSchool }) {
               {errors.name && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.name}</p>}
             </div>
 
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Tingkat / Kelas Tujuan *</label>
               <select
                 value={data.destination_class}
                 onChange={(e) => setData('destination_class', e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:border-sky-600 focus:outline-none"
               >
-                <option value="Kelas 1">Kelas 1</option>
-                <option value="Kelas 2">Kelas 2</option>
-                <option value="Kelas 3">Kelas 3</option>
-                <option value="Kelas 4">Kelas 4</option>
-                <option value="Kelas 5">Kelas 5</option>
-                <option value="Kelas 6">Kelas 6</option>
+                <option value="Kelas 1">Kelas 1 (SD)</option>
+                <option value="Kelas 2">Kelas 2 (SD)</option>
+                <option value="Kelas 3">Kelas 3 (SD)</option>
+                <option value="Kelas 4">Kelas 4 (SD)</option>
+                <option value="Kelas 5">Kelas 5 (SD)</option>
+                <option value="Kelas 6">Kelas 6 (SD)</option>
                 <option value="Kelas 7">Kelas 7 (SMP)</option>
                 <option value="Kelas 8">Kelas 8 (SMP)</option>
                 <option value="Kelas 9">Kelas 9 (SMP)</option>
               </select>
             </div>
+          </div>
 
-            {/* Sekolah Asal Details */}
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-900 border-b border-slate-200 pb-2">
-                <Building2 className="w-4 h-4 text-sky-600" />
-                Sekolah Asal
-              </div>
+          {/* Baris 3: Sekolah Asal (Otomatis dari Akun Operator Sekolah) */}
+          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+              <span className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                <Building2 className="w-4 h-4 text-emerald-600" />
+                Sekolah Asal (Pengirim)
+              </span>
+              <span className="text-[10px] px-2.5 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded-full">
+                Otomatis Akun Operator Sekolah
+              </span>
+            </div>
 
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="md:col-span-2">
                 <label className="block text-[11px] font-bold text-slate-600 mb-1">Nama Sekolah Asal *</label>
                 <input
                   type="text"
                   value={data.school_origin_name}
                   onChange={(e) => setData('school_origin_name', e.target.value)}
+                  readOnly={!!userSchool}
                   placeholder="Contoh: SDN 1 Lembang"
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:border-sky-600 focus:outline-none"
+                  className={`w-full px-3 py-2 rounded-lg text-xs font-bold text-slate-800 focus:outline-none ${
+                    userSchool ? 'bg-slate-200/70 border border-slate-300' : 'bg-white border border-slate-200 focus:border-sky-600'
+                  }`}
                   required
                 />
                 {errors.school_origin_name && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.school_origin_name}</p>}
@@ -223,46 +304,17 @@ export default function MutationEdit({ application, schools, userSchool }) {
                   maxLength={10}
                   value={data.school_origin_npsn}
                   onChange={(e) => setData('school_origin_npsn', e.target.value)}
+                  readOnly={!!userSchool}
                   placeholder="Contoh: 20200001"
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:border-sky-600 focus:outline-none"
+                  className={`w-full px-3 py-2 rounded-lg text-xs font-bold text-slate-800 focus:outline-none ${
+                    userSchool ? 'bg-slate-200/70 border border-slate-300' : 'bg-white border border-slate-200 focus:border-sky-600'
+                  }`}
                 />
               </div>
             </div>
+          </div>
 
-            {/* Sekolah Tujuan Details */}
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-900 border-b border-slate-200 pb-2">
-                <Building2 className="w-4 h-4 text-emerald-600" />
-                Sekolah Tujuan
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">Nama Sekolah Tujuan *</label>
-                <input
-                  type="text"
-                  value={data.school_destination_name}
-                  onChange={(e) => setData('school_destination_name', e.target.value)}
-                  placeholder="Contoh: SMPN 2 Ngamprah"
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:border-sky-600 focus:outline-none"
-                  required
-                />
-                {errors.school_destination_name && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.school_destination_name}</p>}
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">NPSN Sekolah Tujuan</label>
-                <input
-                  type="text"
-                  maxLength={10}
-                  value={data.school_destination_npsn}
-                  onChange={(e) => setData('school_destination_npsn', e.target.value)}
-                  placeholder="Contoh: 20200002"
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:border-sky-600 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="md:col-span-2">
+            <div className="pt-1">
               <label className="block text-xs font-bold text-slate-700 mb-1">Alasan Mutasi</label>
               <textarea
                 rows={2}
@@ -273,7 +325,6 @@ export default function MutationEdit({ application, schools, userSchool }) {
               ></textarea>
             </div>
           </div>
-        </div>
 
         {/* 3. Unggah Ulang Dokumen Section (Opsional jika ingin mengganti file) */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">

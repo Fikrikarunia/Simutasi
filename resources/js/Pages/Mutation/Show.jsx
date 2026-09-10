@@ -143,15 +143,41 @@ export default function MutationShow({ application, userRole }) {
           )}
 
           {application.letter && (
-            <a
-              href={route('mutation.download_letter', application.id)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md transition-all"
-            >
-              <Download className="w-4 h-4" />
-              Unduh Surat Digital (PDF)
-            </a>
+            isAdmin ? (
+              <a
+                href={route('mutation.preview_letter', application.id)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+                title="Cek dan Tinjau Surat Keluar di Browser"
+              >
+                <Eye className="w-4 h-4" />
+                Cek / Tinjau Surat Keluar
+              </a>
+            ) : (
+              <div className="flex items-center gap-2">
+                <a
+                  href={route('mutation.preview_letter', application.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs border border-slate-200 transition-all cursor-pointer"
+                  title="Lihat Pratinjau Surat"
+                >
+                  <Eye className="w-4 h-4 text-sky-600" />
+                  Lihat Surat
+                </a>
+                <a
+                  href={route('mutation.download_letter', application.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+                  title="Unduh Surat Resmi Mutasi (PDF)"
+                >
+                  <Download className="w-4 h-4" />
+                  Unduh Surat Resmi (PDF)
+                </a>
+              </div>
+            )
           )}
         </div>
       </div>

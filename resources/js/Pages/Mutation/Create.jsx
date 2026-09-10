@@ -12,18 +12,18 @@ import {
 } from 'lucide-react';
 
 export default function MutationCreate({ schools, userSchool }) {
-  const defaultSchoolName = userSchool ? userSchool.name : 'SD Negeri Bandung Barat';
-  const defaultSchoolNpsn = userSchool ? (userSchool.npsn || '20200004') : '';
+  const originSchoolName = userSchool ? userSchool.name : '';
+  const originSchoolNpsn = userSchool ? (userSchool.npsn || '') : '';
 
   const { data, setData, post, processing, errors } = useForm({
-    type: 'Masuk',
+    type: 'Keluar',
     nisn: '',
     name: '',
     destination_class: 'Kelas 4',
-    school_origin_name: '',
-    school_origin_npsn: '',
-    school_destination_name: defaultSchoolName,
-    school_destination_npsn: defaultSchoolNpsn,
+    school_origin_name: originSchoolName,
+    school_origin_npsn: originSchoolNpsn,
+    school_destination_name: '',
+    school_destination_npsn: '',
     reason: '',
     surat_pindah: null,
     rapor: null,
@@ -37,25 +37,22 @@ export default function MutationCreate({ schools, userSchool }) {
   });
 
   const handleTypeSelect = (selectedType) => {
-    if (selectedType === 'Masuk') {
-      setData((prev) => ({
-        ...prev,
-        type: 'Masuk',
-        school_destination_name: defaultSchoolName,
-        school_destination_npsn: defaultSchoolNpsn,
-        school_origin_name: prev.school_origin_name === defaultSchoolName ? '' : prev.school_origin_name,
-        school_origin_npsn: prev.school_origin_npsn === defaultSchoolNpsn ? '' : prev.school_origin_npsn,
-      }));
-    } else {
-      setData((prev) => ({
-        ...prev,
-        type: 'Keluar',
-        school_origin_name: defaultSchoolName,
-        school_origin_npsn: defaultSchoolNpsn,
-        school_destination_name: prev.school_destination_name === defaultSchoolName ? '' : prev.school_destination_name,
-        school_destination_npsn: prev.school_destination_npsn === defaultSchoolNpsn ? '' : prev.school_destination_npsn,
-      }));
-    }
+    setData((prev) => ({
+      ...prev,
+      type: selectedType,
+      school_origin_name: originSchoolName || prev.school_origin_name,
+      school_origin_npsn: originSchoolNpsn || prev.school_origin_npsn,
+    }));
+  };
+
+  const handleDestinationChange = (e) => {
+    const val = e.target.value;
+    const matched = schools ? schools.find((s) => s.name.toLowerCase() === val.toLowerCase()) : null;
+    setData((prev) => ({
+      ...prev,
+      school_destination_name: val,
+      school_destination_npsn: matched ? matched.npsn : prev.school_destination_npsn,
+    }));
   };
 
   const handleFileChange = (e, field) => {
@@ -116,22 +113,6 @@ export default function MutationCreate({ schools, userSchool }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <label
-              onClick={() => handleTypeSelect('Masuk')}
-              className={`p-4 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
-                data.type === 'Masuk' ? 'border-sky-600 bg-sky-50/50 text-sky-950 shadow-xs' : 'border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <input type="radio" name="type" checked={data.type === 'Masuk'} onChange={() => {}} className="text-sky-600" />
-                <div>
-                  <h3 className="font-bold text-sm">Mutasi Masuk</h3>
-                  <p className="text-xs text-slate-500">Pindah masuk ke {defaultSchoolName}</p>
-                </div>
-              </div>
-              <ArrowRightLeft className="w-5 h-5 text-sky-600" />
-            </label>
-
-            <label
               onClick={() => handleTypeSelect('Keluar')}
               className={`p-4 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
                 data.type === 'Keluar' ? 'border-sky-600 bg-sky-50/50 text-sky-950 shadow-xs' : 'border-slate-200 hover:border-slate-300'
@@ -141,10 +122,26 @@ export default function MutationCreate({ schools, userSchool }) {
                 <input type="radio" name="type" checked={data.type === 'Keluar'} onChange={() => {}} className="text-sky-600" />
                 <div>
                   <h3 className="font-bold text-sm">Mutasi Keluar</h3>
-                  <p className="text-xs text-slate-500">Pindah keluar dari {defaultSchoolName}</p>
+                  <p className="text-xs text-slate-500">Pindah keluar dari {originSchoolName || 'sekolah Anda'}</p>
                 </div>
               </div>
               <ArrowRightLeft className="w-5 h-5 text-amber-500" />
+            </label>
+
+            <label
+              onClick={() => handleTypeSelect('Masuk')}
+              className={`p-4 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
+                data.type === 'Masuk' ? 'border-sky-600 bg-sky-50/50 text-sky-950 shadow-xs' : 'border-slate-200 hover:border-slate-300'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <input type="radio" name="type" checked={data.type === 'Masuk'} onChange={() => {}} className="text-sky-600" />
+                <div>
+                  <h3 className="font-bold text-sm">Mutasi Masuk</h3>
+                  <p className="text-xs text-slate-500">Pindah masuk siswa</p>
+                </div>
+              </div>
+              <ArrowRightLeft className="w-5 h-5 text-sky-600" />
             </label>
           </div>
           {errors.type && <p className="text-[11px] text-rose-600 mt-2 font-medium">{errors.type}</p>}
@@ -157,32 +154,101 @@ export default function MutationCreate({ schools, userSchool }) {
             Data Siswa & Sekolah
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">NISN Siswa *</label>
-              <input
-                type="text"
-                maxLength={10}
-                value={data.nisn}
-                onChange={(e) => setData('nisn', e.target.value)}
-                placeholder="Masukkan 10 digit NISN"
-                className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-800 focus:outline-none transition-all ${
-                  errors.nisn 
-                    ? 'bg-rose-50/50 border-2 border-rose-300 focus:border-rose-600' 
-                    : 'bg-slate-50 border border-slate-200 focus:bg-white focus:border-sky-600'
-                }`}
-                required
-              />
-              {errors.nisn && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.nisn}</p>}
+          {/* Baris 1: NISN Siswa & Sekolah Tujuan dibarengkan sesuai instruksi */}
+          <div className="p-4 bg-sky-50/60 rounded-2xl border border-sky-100 space-y-3">
+            <div className="flex items-center justify-between border-b border-sky-200/60 pb-2">
+              <span className="text-xs font-bold text-sky-950 flex items-center gap-1.5">
+                <Building2 className="w-4 h-4 text-sky-600" />
+                NISN Siswa & Sekolah Tujuan
+              </span>
+              <span className="text-[10px] px-2 py-0.5 bg-sky-200/70 text-sky-900 font-bold rounded-full">
+                Form Utama
+              </span>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  NISN Siswa *
+                </label>
+                <input
+                  type="text"
+                  maxLength={10}
+                  value={data.nisn}
+                  onChange={(e) => setData('nisn', e.target.value)}
+                  placeholder="Masukkan 10 digit NISN siswa"
+                  className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-800 focus:outline-none transition-all ${
+                    errors.nisn 
+                      ? 'bg-rose-50/50 border-2 border-rose-300 focus:border-rose-600' 
+                      : 'bg-white border border-slate-200 focus:border-sky-600 shadow-xs'
+                  }`}
+                  required
+                />
+                {errors.nisn && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.nisn}</p>}
+                <p className="text-[11px] text-slate-400 mt-1">10 digit nomor induk siswa nasional.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                  <span>Nama Sekolah Tujuan *</span>
+                  {data.school_destination_npsn && (
+                    <span className="text-[10px] text-sky-700 font-bold bg-sky-100 px-1.5 py-0.5 rounded">
+                      NPSN: {data.school_destination_npsn}
+                    </span>
+                  )}
+                </label>
+                <div className="relative">
+                  <input
+                    list="schools-destination-list"
+                    type="text"
+                    value={data.school_destination_name}
+                    onChange={handleDestinationChange}
+                    placeholder="Pilih atau cari SD / SMP tujuan..."
+                    className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-800 focus:outline-none transition-all ${
+                      errors.school_destination_name 
+                        ? 'bg-rose-50/50 border-2 border-rose-300 focus:border-rose-600' 
+                        : 'bg-white border border-slate-200 focus:border-sky-600 shadow-xs'
+                    }`}
+                    required
+                  />
+                  <datalist id="schools-destination-list">
+                    {schools && schools.map((sch) => (
+                      <option key={sch.id} value={sch.name}>
+                        {sch.jenjang} - NPSN: {sch.npsn} - Kec. {sch.kecamatan || '-'}
+                      </option>
+                    ))}
+                  </datalist>
+                </div>
+                {errors.school_destination_name && (
+                  <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.school_destination_name}</p>
+                )}
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="text-[11px] text-slate-500">NPSN Tujuan:</span>
+                  <input
+                    type="text"
+                    maxLength={10}
+                    value={data.school_destination_npsn}
+                    onChange={(e) => setData('school_destination_npsn', e.target.value)}
+                    placeholder="NPSN (otomatis dari pilihan)"
+                    className="flex-1 px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-medium text-slate-700 focus:border-sky-600 focus:outline-none"
+                  />
+                </div>
+                {errors.school_destination_npsn && (
+                  <p className="text-[11px] text-rose-600 mt-0.5 font-semibold">{errors.school_destination_npsn}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Baris 2: Nama Siswa & Tingkat Kelas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap Siswa *</label>
               <input
                 type="text"
                 value={data.name}
                 onChange={(e) => setData('name', e.target.value)}
-                placeholder="Nama lengkap sesuai dokumen"
+                placeholder="Nama lengkap sesuai dokumen rapor / akta"
                 className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-800 focus:outline-none transition-all ${
                   errors.name 
                     ? 'bg-rose-50/50 border-2 border-rose-300 focus:border-rose-600' 
@@ -193,7 +259,7 @@ export default function MutationCreate({ schools, userSchool }) {
               {errors.name && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.name}</p>}
             </div>
 
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Tingkat / Kelas Tujuan *</label>
               <select
                 value={data.destination_class}
@@ -204,41 +270,43 @@ export default function MutationCreate({ schools, userSchool }) {
                     : 'bg-slate-50 border border-slate-200 focus:bg-white focus:border-sky-600'
                 }`}
               >
-                <option value="Kelas 1">Kelas 1</option>
-                <option value="Kelas 2">Kelas 2</option>
-                <option value="Kelas 3">Kelas 3</option>
-                <option value="Kelas 4">Kelas 4</option>
-                <option value="Kelas 5">Kelas 5</option>
-                <option value="Kelas 6">Kelas 6</option>
+                <option value="Kelas 1">Kelas 1 (SD)</option>
+                <option value="Kelas 2">Kelas 2 (SD)</option>
+                <option value="Kelas 3">Kelas 3 (SD)</option>
+                <option value="Kelas 4">Kelas 4 (SD)</option>
+                <option value="Kelas 5">Kelas 5 (SD)</option>
+                <option value="Kelas 6">Kelas 6 (SD)</option>
                 <option value="Kelas 7">Kelas 7 (SMP)</option>
                 <option value="Kelas 8">Kelas 8 (SMP)</option>
                 <option value="Kelas 9">Kelas 9 (SMP)</option>
               </select>
               {errors.destination_class && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.destination_class}</p>}
             </div>
+          </div>
 
-            {/* Sekolah Asal Details */}
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-900 border-b border-slate-200 pb-2">
-                <Building2 className="w-4 h-4 text-sky-600" />
-                Sekolah Asal
-                {data.type === 'Keluar' && (
-                  <span className="ml-auto text-[10px] px-2 py-0.5 bg-sky-100 text-sky-800 font-bold rounded-full">
-                    Otomatis Akun Login
-                  </span>
-                )}
-              </div>
+          {/* Baris 3: Sekolah Asal (Otomatis dari Akun Operator Sekolah) */}
+          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+              <span className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                <Building2 className="w-4 h-4 text-emerald-600" />
+                Sekolah Asal (Pengirim)
+              </span>
+              <span className="text-[10px] px-2.5 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded-full">
+                Otomatis Akun Operator Sekolah
+              </span>
+            </div>
 
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="md:col-span-2">
                 <label className="block text-[11px] font-bold text-slate-600 mb-1">Nama Sekolah Asal *</label>
                 <input
                   type="text"
                   value={data.school_origin_name}
                   onChange={(e) => setData('school_origin_name', e.target.value)}
-                  readOnly={data.type === 'Keluar' && !!userSchool}
-                  placeholder="Contoh: SDN 1 Lembang"
-                  className={`w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-800 focus:outline-none ${
-                    data.type === 'Keluar' && !!userSchool ? 'bg-slate-200/70 border border-slate-300 font-bold' : 'bg-white border border-slate-200 focus:border-sky-600'
+                  readOnly={!!userSchool}
+                  placeholder="Nama sekolah asal"
+                  className={`w-full px-3 py-2 rounded-lg text-xs font-bold text-slate-800 focus:outline-none ${
+                    userSchool ? 'bg-slate-200/70 border border-slate-300' : 'bg-white border border-slate-200 focus:border-sky-600'
                   }`}
                   required
                 />
@@ -252,71 +320,26 @@ export default function MutationCreate({ schools, userSchool }) {
                   maxLength={10}
                   value={data.school_origin_npsn}
                   onChange={(e) => setData('school_origin_npsn', e.target.value)}
-                  readOnly={data.type === 'Keluar' && !!userSchool}
-                  placeholder="Contoh: 20200001"
-                  className={`w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-800 focus:outline-none ${
-                    data.type === 'Keluar' && !!userSchool ? 'bg-slate-200/70 border border-slate-300 font-bold' : 'bg-white border border-slate-200 focus:border-sky-600'
+                  readOnly={!!userSchool}
+                  placeholder="NPSN sekolah asal"
+                  className={`w-full px-3 py-2 rounded-lg text-xs font-bold text-slate-800 focus:outline-none ${
+                    userSchool ? 'bg-slate-200/70 border border-slate-300' : 'bg-white border border-slate-200 focus:border-sky-600'
                   }`}
                 />
                 {errors.school_origin_npsn && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.school_origin_npsn}</p>}
               </div>
             </div>
+          </div>
 
-            {/* Sekolah Tujuan Details */}
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-900 border-b border-slate-200 pb-2">
-                <Building2 className="w-4 h-4 text-emerald-600" />
-                Sekolah Tujuan
-                {data.type === 'Masuk' && (
-                  <span className="ml-auto text-[10px] px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded-full">
-                    Otomatis Akun Login
-                  </span>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">Nama Sekolah Tujuan *</label>
-                <input
-                  type="text"
-                  value={data.school_destination_name}
-                  onChange={(e) => setData('school_destination_name', e.target.value)}
-                  readOnly={data.type === 'Masuk' && !!userSchool}
-                  placeholder="Contoh: SMPN 2 Ngamprah"
-                  className={`w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-800 focus:outline-none ${
-                    data.type === 'Masuk' && !!userSchool ? 'bg-slate-200/70 border border-slate-300 font-bold' : 'bg-white border border-slate-200 focus:border-sky-600'
-                  }`}
-                  required
-                />
-                {errors.school_destination_name && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.school_destination_name}</p>}
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">NPSN Sekolah Tujuan</label>
-                <input
-                  type="text"
-                  maxLength={10}
-                  value={data.school_destination_npsn}
-                  onChange={(e) => setData('school_destination_npsn', e.target.value)}
-                  readOnly={data.type === 'Masuk' && !!userSchool}
-                  placeholder="Contoh: 20200002"
-                  className={`w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-800 focus:outline-none ${
-                    data.type === 'Masuk' && !!userSchool ? 'bg-slate-200/70 border border-slate-300 font-bold' : 'bg-white border border-slate-200 focus:border-sky-600'
-                  }`}
-                />
-                {errors.school_destination_npsn && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.school_destination_npsn}</p>}
-              </div>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-xs font-bold text-slate-700 mb-1">Alasan Mutasi</label>
-              <textarea
-                rows={2}
-                value={data.reason}
-                onChange={(e) => setData('reason', e.target.value)}
-                placeholder="Contoh: Pindah domisili orang tua ke Cisarua"
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:border-sky-600 focus:outline-none"
-              ></textarea>
-            </div>
+          <div className="pt-1">
+            <label className="block text-xs font-bold text-slate-700 mb-1">Alasan Mutasi</label>
+            <textarea
+              rows={2}
+              value={data.reason}
+              onChange={(e) => setData('reason', e.target.value)}
+              placeholder="Contoh: Pindah domisili orang tua bekerja di Kabupaten Bandung Barat"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:border-sky-600 focus:outline-none"
+            ></textarea>
           </div>
         </div>
 

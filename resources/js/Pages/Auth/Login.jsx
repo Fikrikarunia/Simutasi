@@ -77,15 +77,15 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="p-8 space-y-5">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Alamat Email Pengguna
+                Email Pengguna atau NPSN Sekolah
               </label>
               <div className="relative">
                 <Mail className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
-                  type="email"
+                  type="text"
                   value={data.email}
                   onChange={(e) => setData('email', e.target.value)}
-                  placeholder="admin@disdik.kbb.go.id atau operator@sekolah.sch.id"
+                  placeholder="Email dinas atau 8-digit NPSN Sekolah (cth: 20227510)"
                   className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:border-sky-600 focus:outline-none transition-all"
                   required
                 />
@@ -157,18 +157,18 @@ export default function Login() {
 
                 <button
                   type="button"
-                  onClick={() => setPreset('operator@sdn1bandungbarat.sch.id')}
+                  onClick={() => setPreset('20227510')}
                   className={`p-2.5 rounded-xl text-left transition-all border cursor-pointer ${
-                    data.email === 'operator@sdn1bandungbarat.sch.id'
+                    data.email === '20227510'
                       ? 'bg-emerald-50 border-emerald-400 ring-2 ring-emerald-200'
                       : 'bg-slate-50 hover:bg-emerald-50 border-slate-200'
                   }`}
                 >
                   <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800">
                     <School className="w-3.5 h-3.5 text-emerald-600" />
-                    OPERATOR SEKOLAH
+                    OPERATOR (NPSN)
                   </div>
-                  <p className="text-[10px] text-slate-500 mt-0.5 truncate">operator@sdn1...sch.id</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5 truncate">20227510 (SD Advent)</p>
                 </button>
               </div>
             </div>

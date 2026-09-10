@@ -87,6 +87,30 @@ class MutationLetterController extends Controller
         return $pdf->download($fileName);
     }
 
+    public function preview($id)
+    {
+        $application = MutationApplication::with(['student', 'schoolOrigin', 'schoolDestination', 'letter'])->findOrFail($id);
+
+        if (!$application->letter) {
+            return back()->with('error', 'Surat mutasi belum diterbitkan.');
+        }
+
+        // Generate QR code SVG or Base64 string for embedding in PDF
+        $verifyUrl = route('letter.verify', $application->letter->qr_code_hash);
+        $qrCodeSvg = base64_encode(QrCode::format('svg')->size(120)->errorCorrection('H')->generate($verifyUrl));
+
+        $pdf = Pdf::loadView('pdf.mutation_letter', [
+            'app' => $application,
+            'letter' => $application->letter,
+            'student' => $application->student,
+            'verifyUrl' => $verifyUrl,
+            'qrCodeSvg' => $qrCodeSvg,
+        ]);
+
+        $fileName = "Surat_Mutasi_" . Str::slug($application->student->name) . ".pdf";
+        return $pdf->stream($fileName);
+    }
+
     public function verifyPublic($hash)
     {
         $letter = MutationLetter::with(['mutationApplication.student', 'mutationApplication.schoolOrigin', 'mutationApplication.schoolDestination'])

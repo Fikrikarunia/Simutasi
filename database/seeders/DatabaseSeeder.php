@@ -370,5 +370,8 @@ class DatabaseSeeder extends Seeder
             'ip_address' => '127.0.0.1',
             'created_at' => now()->subDays(3),
         ]);
+
+        // Panggil import sekolah & akun operator SD dan SMP
+        $this->call(SchoolAndOperatorSeeder::class);
     }
 }

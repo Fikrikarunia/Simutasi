@@ -200,14 +200,14 @@ export default function AdminDashboard({ stats, applications, filters }) {
                         </Link>
                         {app.status === 'Selesai' && app.letter && (
                           <a
-                            href={route('mutation.download_letter', app.id)}
+                            href={route('mutation.preview_letter', app.id)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-all shadow-xs inline-flex items-center gap-1"
-                            title="Unduh Surat Digital"
+                            className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs transition-all shadow-xs inline-flex items-center gap-1 cursor-pointer"
+                            title="Cek / Tinjau Surat Keluar di Browser"
                           >
-                            <Mail className="w-3.5 h-3.5" />
-                            Surat PDF
+                            <FileText className="w-3.5 h-3.5" />
+                            Cek Surat
                           </a>
                         )}
                       </div>

@@ -36,7 +36,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/document/{id}/download', [MutationApplicationController::class, 'downloadDocument'])->name('document.download');
     Route::get('/document/{id}/view', [MutationApplicationController::class, 'viewDocument'])->name('document.view');
 
-    // Mutation Letter Issuance & Download
+    // Mutation Letter Issuance, Download & Preview
     Route::post('/mutation/{id}/issue-letter', [MutationLetterController::class, 'issue'])->name('mutation.issue_letter');
     Route::get('/mutation/{id}/download-letter', [MutationLetterController::class, 'download'])->name('mutation.download_letter');
+    Route::get('/mutation/{id}/preview-letter', [MutationLetterController::class, 'preview'])->name('mutation.preview_letter');
 });
