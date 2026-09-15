@@ -85,6 +85,12 @@
         <p>Pos-el disdik@bandungbaratkab.go.id, Laman www.disdikkbb.org</p>
     </div>
 
+    @if(!empty($isDraft))
+    <div style="background-color: #fef3c7; border: 2px dashed #d97706; color: #92400e; padding: 6px 10px; margin-bottom: 12px; text-align: center; font-size: 10.5pt; font-weight: bold; letter-spacing: 1px;">
+        *** DRAF TINJAUAN SURAT REKOMENDASI MUTASI - BELUM DITERBITKAN RESMI ***
+    </div>
+    @endif
+
     <table class="meta-table">
         <tr>
             <td width="15%">Nomor</td>
@@ -167,8 +173,13 @@
                 <div class="qr-box">
                     <img src="data:image/svg+xml;base64,{{ $qrCodeSvg }}" width="90" height="90" alt="QR Code Verifikasi"><br>
                     <small style="font-size: 7.5pt; color: #444;">
-                        Dokumen Asli Diterbitkan secara Digital oleh PETADIK KBB.<br>
-                        Pindai QR Code untuk verifikasi keabsahan surat.
+                        @if(!empty($isDraft))
+                            <strong style="color: #b45309;">DRAF PRATINJAU DOKUMEN</strong><br>
+                            Surat ini belum disahkan / diterbitkan secara resmi.
+                        @else
+                            Dokumen Asli Diterbitkan secara Digital oleh PETADIK KBB.<br>
+                            Pindai QR Code untuk verifikasi keabsahan surat.
+                        @endif
                     </small>
                 </div>
             </td>

@@ -90,24 +90,42 @@ class MutationLetterController extends Controller
     public function preview($id)
     {
         $application = MutationApplication::with(['student', 'schoolOrigin', 'schoolDestination', 'letter'])->findOrFail($id);
+        $user = Auth::user();
 
-        if (!$application->letter) {
-            return back()->with('error', 'Surat mutasi belum diterbitkan.');
+        $letter = $application->letter;
+        $isDraft = false;
+
+        if (!$letter) {
+            // Jika surat belum diterbitkan, izinkan Admin Dinas/Operator untuk meninjau Draf Surat
+            $isDraft = true;
+            $letter = (object)[
+                'letter_number' => '400.3.5.1/DRAF-Bid. SD/' . date('Y'),
+                'signed_by_name' => 'Popi Siti Ichsanniaty, S.Pd., M.Pd',
+                'signed_by_nip' => '197711142009012001',
+                'signed_by_position' => 'Kepala Bidang Pembinaan SD / Ub. Analis Sub Koordinasi Kesiswaan SD',
+                'issued_at' => now(),
+                'qr_code_hash' => 'draft-preview',
+            ];
+
+            $verifyUrl = url('/');
+            $qrCodeSvg = base64_encode(QrCode::format('svg')->size(120)->errorCorrection('H')->generate('DRAF TINJAUAN SIMUTASI KBB - BELUM DITERBITKAN RESMI'));
+            $fileName = "Draf_Surat_Mutasi_" . Str::slug($application->student ? $application->student->name : 'Siswa') . ".pdf";
+        } else {
+            // Generate QR code SVG or Base64 string for embedding in PDF
+            $verifyUrl = route('letter.verify', $letter->qr_code_hash);
+            $qrCodeSvg = base64_encode(QrCode::format('svg')->size(120)->errorCorrection('H')->generate($verifyUrl));
+            $fileName = "Surat_Mutasi_" . Str::slug($application->student ? $application->student->name : 'Siswa') . ".pdf";
         }
-
-        // Generate QR code SVG or Base64 string for embedding in PDF
-        $verifyUrl = route('letter.verify', $application->letter->qr_code_hash);
-        $qrCodeSvg = base64_encode(QrCode::format('svg')->size(120)->errorCorrection('H')->generate($verifyUrl));
 
         $pdf = Pdf::loadView('pdf.mutation_letter', [
             'app' => $application,
-            'letter' => $application->letter,
+            'letter' => $letter,
             'student' => $application->student,
             'verifyUrl' => $verifyUrl,
             'qrCodeSvg' => $qrCodeSvg,
+            'isDraft' => $isDraft,
         ]);
 
-        $fileName = "Surat_Mutasi_" . Str::slug($application->student->name) . ".pdf";
         return $pdf->stream($fileName);
     }
 
