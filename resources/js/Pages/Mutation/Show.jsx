@@ -132,7 +132,7 @@ export default function MutationShow({ application, userRole }) {
 
         {/* Action button if letter ready or edit button if Dikembalikan */}
         <div className="flex items-center gap-2">
-          {application.status === 'Dikembalikan' && (
+          {!isAdmin && application.status === 'Dikembalikan' && (
             <Link
               href={route('mutation.edit', application.id)}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs shadow-md transition-all"
@@ -191,12 +191,14 @@ export default function MutationShow({ application, userRole }) {
             </h4>
             <p className="ml-6 font-semibold text-slate-800">{application.rejection_note}</p>
           </div>
-          <Link
-            href={route('mutation.edit', application.id)}
-            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-xs shrink-0"
-          >
-            Edit Pengajuan Langsung
-          </Link>
+          {!isAdmin && (
+            <Link
+              href={route('mutation.edit', application.id)}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-xs shrink-0"
+            >
+              Edit Pengajuan Langsung
+            </Link>
+          )}
         </div>
       )}
 

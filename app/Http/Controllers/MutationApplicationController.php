@@ -65,6 +65,10 @@ class MutationApplicationController extends Controller
     {
         $request->validate([
             'type' => 'required|in:Masuk,Keluar',
+            'destination_region' => 'nullable|in:dalam,luar',
+            'origin_region' => 'nullable|in:dalam,luar',
+            'destination_city' => 'nullable|string|max:150',
+            'origin_city' => 'nullable|string|max:150',
             'nisn' => 'required|string|size:10',
             'name' => 'required|string|max:255',
             'destination_class' => 'required|string',
@@ -118,19 +122,43 @@ class MutationApplicationController extends Controller
         $count = MutationApplication::whereYear('created_at', date('Y'))->count() + 1;
         $regNumber = 'REG-' . date('Y') . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
 
-        // Determine school origin & destination IDs
-        $schoolOrigin = School::where('name', 'like', "%{$request->school_origin_name}%")->first();
-        $schoolDest = School::where('name', 'like', "%{$request->school_destination_name}%")->first();
+        // Process School Destination (handle Luar Kab. Bandung Barat)
+        $destinationName = trim($request->school_destination_name);
+        if ($request->destination_region === 'luar' && !empty($request->destination_city)) {
+            $cityTrimmed = trim($request->destination_city);
+            if (!str_contains(strtolower($destinationName), strtolower($cityTrimmed))) {
+                $destinationName .= " ({$cityTrimmed})";
+            }
+        }
+
+        $schoolDest = null;
+        if ($request->destination_region !== 'luar') {
+            $schoolDest = School::where('name', 'like', "%{$request->school_destination_name}%")->first();
+        }
+
+        // Process School Origin (handle Luar Kab. Bandung Barat for mutasi masuk)
+        $originName = trim($request->school_origin_name);
+        if ($request->origin_region === 'luar' && !empty($request->origin_city)) {
+            $cityTrimmed = trim($request->origin_city);
+            if (!str_contains(strtolower($originName), strtolower($cityTrimmed))) {
+                $originName .= " ({$cityTrimmed})";
+            }
+        }
+
+        $schoolOrigin = null;
+        if ($request->origin_region !== 'luar') {
+            $schoolOrigin = School::where('name', 'like', "%{$request->school_origin_name}%")->first();
+        }
 
         $application = MutationApplication::create([
             'registration_number' => $regNumber,
             'type' => $request->type,
             'student_id' => $student->id,
             'school_origin_id' => $schoolOrigin ? $schoolOrigin->id : ($request->type === 'Keluar' ? $user->school_id : null),
-            'school_origin_name' => $request->school_origin_name,
+            'school_origin_name' => $originName,
             'school_origin_npsn' => $request->school_origin_npsn,
             'school_destination_id' => $schoolDest ? $schoolDest->id : ($request->type === 'Masuk' ? $user->school_id : null),
-            'school_destination_name' => $request->school_destination_name,
+            'school_destination_name' => $destinationName,
             'school_destination_npsn' => $request->school_destination_npsn,
             'destination_class' => $request->destination_class,
             'reason' => $request->reason,
@@ -268,8 +296,17 @@ class MutationApplicationController extends Controller
         $application = MutationApplication::with(['student', 'schoolOrigin', 'schoolDestination', 'documents'])->findOrFail($id);
         $user = Auth::user();
 
-        if ($application->operator_user_id !== $user->id && !$user->isAdminDinas() && !$user->isSuperAdmin()) {
-            abort(403, 'Akses ditolak.');
+        // Hanya Operator Sekolah yang dapat mengedit/memperbaiki pengajuan
+        if (!$user->isOperatorSekolah()) {
+            abort(403, 'Akses ditolak. Hanya Operator Sekolah yang berhak mengedit atau memperbaiki pengajuan mutasi.');
+        }
+
+        // Operator hanya dapat mengedit pengajuan dari/ke sekolahnya
+        $canEdit = ($application->operator_user_id === $user->id) ||
+                   ($user->school_id && in_array($user->school_id, [$application->school_origin_id, $application->school_destination_id]));
+
+        if (!$canEdit) {
+            abort(403, 'Akses ditolak. Anda tidak memiliki izin untuk mengedit pengajuan sekolah lain.');
         }
 
         $schools = School::orderBy('name')->get();
@@ -286,12 +323,25 @@ class MutationApplicationController extends Controller
         $application = MutationApplication::with(['student', 'documents'])->findOrFail($id);
         $user = Auth::user();
 
-        if ($application->operator_user_id !== $user->id && !$user->isAdminDinas() && !$user->isSuperAdmin()) {
-            abort(403, 'Akses ditolak.');
+        // Hanya Operator Sekolah yang dapat mengedit/memperbaiki pengajuan
+        if (!$user->isOperatorSekolah()) {
+            abort(403, 'Akses ditolak. Hanya Operator Sekolah yang berhak mengedit atau memperbaiki pengajuan mutasi.');
+        }
+
+        // Operator hanya dapat mengedit pengajuan dari/ke sekolahnya
+        $canEdit = ($application->operator_user_id === $user->id) ||
+                   ($user->school_id && in_array($user->school_id, [$application->school_origin_id, $application->school_destination_id]));
+
+        if (!$canEdit) {
+            abort(403, 'Akses ditolak. Anda tidak memiliki izin untuk mengedit pengajuan sekolah lain.');
         }
 
         $request->validate([
             'type' => 'required|in:Masuk,Keluar',
+            'destination_region' => 'nullable|in:dalam,luar',
+            'origin_region' => 'nullable|in:dalam,luar',
+            'destination_city' => 'nullable|string|max:150',
+            'origin_city' => 'nullable|string|max:150',
             'nisn' => 'required|string|size:10',
             'name' => 'required|string|max:255',
             'destination_class' => 'required|string',
@@ -330,17 +380,42 @@ class MutationApplicationController extends Controller
             ]);
         }
 
-        $schoolOrigin = School::where('name', 'like', "%{$request->school_origin_name}%")->first();
-        $schoolDest = School::where('name', 'like', "%{$request->school_destination_name}%")->first();
+        // Process School Destination (handle Luar Kab. Bandung Barat)
+        $destinationName = trim($request->school_destination_name);
+        if ($request->destination_region === 'luar' && !empty($request->destination_city)) {
+            $cityTrimmed = trim($request->destination_city);
+            if (!str_contains(strtolower($destinationName), strtolower($cityTrimmed))) {
+                $destinationName .= " ({$cityTrimmed})";
+            }
+        }
+
+        $schoolDest = null;
+        if ($request->destination_region !== 'luar') {
+            $schoolDest = School::where('name', 'like', "%{$request->school_destination_name}%")->first();
+        }
+
+        // Process School Origin (handle Luar Kab. Bandung Barat for mutasi masuk)
+        $originName = trim($request->school_origin_name);
+        if ($request->origin_region === 'luar' && !empty($request->origin_city)) {
+            $cityTrimmed = trim($request->origin_city);
+            if (!str_contains(strtolower($originName), strtolower($cityTrimmed))) {
+                $originName .= " ({$cityTrimmed})";
+            }
+        }
+
+        $schoolOrigin = null;
+        if ($request->origin_region !== 'luar') {
+            $schoolOrigin = School::where('name', 'like', "%{$request->school_origin_name}%")->first();
+        }
 
         $statusBefore = $application->status;
         $application->update([
             'type' => $request->type,
             'school_origin_id' => $schoolOrigin ? $schoolOrigin->id : ($request->type === 'Keluar' ? $user->school_id : null),
-            'school_origin_name' => $request->school_origin_name,
+            'school_origin_name' => $originName,
             'school_origin_npsn' => $request->school_origin_npsn,
             'school_destination_id' => $schoolDest ? $schoolDest->id : ($request->type === 'Masuk' ? $user->school_id : null),
-            'school_destination_name' => $request->school_destination_name,
+            'school_destination_name' => $destinationName,
             'school_destination_npsn' => $request->school_destination_npsn,
             'destination_class' => $request->destination_class,
             'reason' => $request->reason,

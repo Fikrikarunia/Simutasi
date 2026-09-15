@@ -9,13 +9,22 @@ import {
   FileText, 
   AlertCircle,
   Building2,
-  RotateCcw
+  RotateCcw,
+  MapPin,
+  Globe
 } from 'lucide-react';
 
 export default function MutationEdit({ application, schools, userSchool }) {
+  const isDestOutside = application.type === 'Keluar' && (!application.school_destination_id || !(schools && schools.some(s => s.id === application.school_destination_id)));
+  const isOriginOutside = application.type === 'Masuk' && (!application.school_origin_id || !(schools && schools.some(s => s.id === application.school_origin_id)));
+
   const { data, setData, post, processing, errors } = useForm({
     _method: 'POST',
     type: application.type || 'Masuk',
+    destination_region: isDestOutside ? 'luar' : 'dalam',
+    destination_city: '',
+    origin_region: isOriginOutside ? 'luar' : 'dalam',
+    origin_city: '',
     nisn: application.student?.nisn || '',
     name: application.student?.name || '',
     destination_class: application.destination_class || 'Kelas 4',
@@ -46,6 +55,16 @@ export default function MutationEdit({ application, schools, userSchool }) {
       ...prev,
       school_destination_name: val,
       school_destination_npsn: matched ? matched.npsn : prev.school_destination_npsn,
+    }));
+  };
+
+  const handleOriginChange = (e) => {
+    const val = e.target.value;
+    const matched = schools ? schools.find((s) => s.name.toLowerCase() === val.toLowerCase()) : null;
+    setData((prev) => ({
+      ...prev,
+      school_origin_name: val,
+      school_origin_npsn: matched ? matched.npsn : prev.school_origin_npsn,
     }));
   };
 
@@ -188,47 +207,167 @@ export default function MutationEdit({ application, schools, userSchool }) {
                 {errors.nisn && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.nisn}</p>}
               </div>
 
+              {/* Sekolah Tujuan */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                  <span>Nama Sekolah Tujuan *</span>
-                  {data.school_destination_npsn && (
-                    <span className="text-[10px] text-sky-700 font-bold bg-sky-100 px-1.5 py-0.5 rounded">
-                      NPSN: {data.school_destination_npsn}
-                    </span>
-                  )}
-                </label>
-                <div className="relative">
-                  <input
-                    list="edit-schools-destination-list"
-                    type="text"
-                    value={data.school_destination_name}
-                    onChange={handleDestinationChange}
-                    placeholder="Pilih atau cari SD / SMP tujuan..."
-                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:border-sky-600 focus:outline-none shadow-xs"
-                    required
-                  />
-                  <datalist id="edit-schools-destination-list">
-                    {schools && schools.map((sch) => (
-                      <option key={sch.id} value={sch.name}>
-                        {sch.jenjang} - NPSN: {sch.npsn} - Kec. {sch.kecamatan || '-'}
-                      </option>
-                    ))}
-                  </datalist>
-                </div>
-                {errors.school_destination_name && (
-                  <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.school_destination_name}</p>
+                {data.type === 'Keluar' ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-slate-700">
+                        Sekolah Tujuan *
+                      </label>
+                      {/* Toggle Wilayah Tujuan: Dalam vs Luar KBB */}
+                      <div className="inline-flex p-0.5 bg-sky-100/90 rounded-lg text-[10px] font-bold">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setData((prev) => ({ 
+                              ...prev, 
+                              destination_region: 'dalam', 
+                              school_destination_name: '', 
+                              school_destination_npsn: '', 
+                              destination_city: '' 
+                            }));
+                          }}
+                          className={`px-2.5 py-0.5 rounded-md transition-all ${
+                            data.destination_region === 'dalam'
+                              ? 'bg-white text-sky-900 shadow-xs'
+                              : 'text-sky-700 hover:text-sky-950'
+                          }`}
+                        >
+                          Dalam KBB
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setData((prev) => ({ 
+                              ...prev, 
+                              destination_region: 'luar', 
+                              school_destination_name: '', 
+                              school_destination_npsn: '', 
+                              destination_city: '' 
+                            }));
+                          }}
+                          className={`px-2.5 py-0.5 rounded-md transition-all flex items-center gap-1 ${
+                            data.destination_region === 'luar'
+                              ? 'bg-amber-500 text-white shadow-xs'
+                              : 'text-sky-700 hover:text-sky-950'
+                          }`}
+                        >
+                          <Globe className="w-2.5 h-2.5" /> Luar KBB
+                        </button>
+                      </div>
+                    </div>
+
+                    {data.destination_region === 'dalam' ? (
+                      <div>
+                        <div className="relative">
+                          <input
+                            list="edit-schools-destination-list"
+                            type="text"
+                            value={data.school_destination_name}
+                            onChange={handleDestinationChange}
+                            placeholder="Pilih atau cari SD / SMP di Bandung Barat..."
+                            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:border-sky-600 focus:outline-none shadow-xs"
+                            required
+                          />
+                          <datalist id="edit-schools-destination-list">
+                            {schools && schools.map((sch) => (
+                              <option key={sch.id} value={sch.name}>
+                                {sch.jenjang} - NPSN: {sch.npsn} - Kec. {sch.kecamatan || '-'}
+                              </option>
+                            ))}
+                          </datalist>
+                        </div>
+                        {errors.school_destination_name && (
+                          <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.school_destination_name}</p>
+                        )}
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <span className="text-[11px] text-slate-500 font-medium">NPSN Tujuan:</span>
+                          <input
+                            type="text"
+                            maxLength={10}
+                            value={data.school_destination_npsn}
+                            onChange={(e) => setData('school_destination_npsn', e.target.value)}
+                            placeholder="NPSN (otomatis dari pilihan)"
+                            className="flex-1 px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-medium text-slate-700 focus:border-sky-600 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      /* Form Luar KBB */
+                      <div className="bg-amber-50/80 border border-amber-200 p-3 rounded-xl space-y-2 animate-in fade-in duration-150">
+                        <div className="flex items-center justify-between text-[11px] text-amber-900 font-bold border-b border-amber-200/60 pb-1">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3.5 h-3.5 text-amber-600" /> Sekolah Luar Kab. Bandung Barat
+                          </span>
+                          <span className="text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-bold">
+                            Luar Daerah
+                          </span>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Nama Sekolah Tujuan *</label>
+                          <input
+                            type="text"
+                            value={data.school_destination_name}
+                            onChange={(e) => setData('school_destination_name', e.target.value)}
+                            placeholder="Contoh: SMP Negeri 1 Cimahi / SDN 01 Menteng"
+                            className="w-full px-3 py-1.5 rounded-lg text-xs font-medium text-slate-800 bg-white border border-amber-200 focus:border-amber-500 shadow-xs focus:outline-none"
+                            required
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Kota / Kab & Provinsi Tujuan (Opsional)</label>
+                            <input
+                              type="text"
+                              value={data.destination_city}
+                              onChange={(e) => setData('destination_city', e.target.value)}
+                              placeholder="Contoh: Kota Cimahi, Jawa Barat"
+                              className="w-full px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 bg-white border border-amber-200 focus:border-amber-500 focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-700 mb-0.5">NPSN Tujuan (Opsional)</label>
+                            <input
+                              type="text"
+                              maxLength={10}
+                              value={data.school_destination_npsn}
+                              onChange={(e) => setData('school_destination_npsn', e.target.value)}
+                              placeholder="NPSN (jika ada)"
+                              className="w-full px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 bg-white border border-amber-200 focus:border-amber-500 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <p className="text-[10px] text-amber-700 leading-tight">
+                          Ketik nama sekolah dan kota/kabupaten tujuan di luar KBB secara lengkap untuk Surat Rekomendasi Mutasi Dinas.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* Mutasi Masuk */
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                      <span>Sekolah Tujuan (Penerima) *</span>
+                      <span className="text-[10px] px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded-full">
+                        Sekolah Penerima
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      value={data.school_destination_name}
+                      readOnly
+                      className="w-full px-3.5 py-2.5 bg-slate-200/70 border border-slate-300 rounded-xl text-xs font-bold text-slate-800"
+                    />
+                    {data.school_destination_npsn && (
+                      <p className="text-[11px] text-slate-500 mt-1 font-medium">NPSN: {data.school_destination_npsn}</p>
+                    )}
+                  </div>
                 )}
-                <div className="mt-1 flex items-center gap-2">
-                  <span className="text-[11px] text-slate-500">NPSN Tujuan:</span>
-                  <input
-                    type="text"
-                    maxLength={10}
-                    value={data.school_destination_npsn}
-                    onChange={(e) => setData('school_destination_npsn', e.target.value)}
-                    placeholder="NPSN (otomatis dari pilihan)"
-                    className="flex-1 px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-medium text-slate-700 focus:border-sky-600 focus:outline-none"
-                  />
-                </div>
               </div>
             </div>
           </div>
@@ -268,50 +407,173 @@ export default function MutationEdit({ application, schools, userSchool }) {
             </div>
           </div>
 
-          {/* Baris 3: Sekolah Asal (Otomatis dari Akun Operator Sekolah) */}
+          {/* Baris 3: Sekolah Asal (Pengirim) */}
           <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
             <div className="flex items-center justify-between border-b border-slate-200 pb-2">
               <span className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
                 <Building2 className="w-4 h-4 text-emerald-600" />
                 Sekolah Asal (Pengirim)
               </span>
-              <span className="text-[10px] px-2.5 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded-full">
-                Otomatis Akun Operator Sekolah
-              </span>
+              {data.type === 'Keluar' ? (
+                <span className="text-[10px] px-2.5 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded-full">
+                  Sekolah Pengirim
+                </span>
+              ) : (
+                /* Toggle Wilayah Asal untuk Mutasi Masuk */
+                <div className="inline-flex p-0.5 bg-slate-200/80 rounded-lg text-[10px] font-bold">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setData((prev) => ({ 
+                        ...prev, 
+                        origin_region: 'dalam', 
+                        school_origin_name: '', 
+                        school_origin_npsn: '', 
+                        origin_city: '' 
+                      }));
+                    }}
+                    className={`px-2.5 py-0.5 rounded-md transition-all ${
+                      data.origin_region === 'dalam'
+                        ? 'bg-white text-emerald-900 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Dari Dalam KBB
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setData((prev) => ({ 
+                        ...prev, 
+                        origin_region: 'luar', 
+                        school_origin_name: '', 
+                        school_origin_npsn: '', 
+                        origin_city: '' 
+                      }));
+                    }}
+                    className={`px-2.5 py-0.5 rounded-md transition-all flex items-center gap-1 ${
+                      data.origin_region === 'luar'
+                        ? 'bg-amber-500 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Globe className="w-2.5 h-2.5" /> Dari Luar KBB
+                  </button>
+                </div>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="md:col-span-2">
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">Nama Sekolah Asal *</label>
-                <input
-                  type="text"
-                  value={data.school_origin_name}
-                  onChange={(e) => setData('school_origin_name', e.target.value)}
-                  readOnly={!!userSchool}
-                  placeholder="Contoh: SDN 1 Lembang"
-                  className={`w-full px-3 py-2 rounded-lg text-xs font-bold text-slate-800 focus:outline-none ${
-                    userSchool ? 'bg-slate-200/70 border border-slate-300' : 'bg-white border border-slate-200 focus:border-sky-600'
-                  }`}
-                  required
-                />
-                {errors.school_origin_name && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.school_origin_name}</p>}
-              </div>
+            {data.type === 'Keluar' ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="md:col-span-2">
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Nama Sekolah Asal *</label>
+                  <input
+                    type="text"
+                    value={data.school_origin_name}
+                    onChange={(e) => setData('school_origin_name', e.target.value)}
+                    readOnly={!!userSchool}
+                    placeholder="Contoh: SDN 1 Lembang"
+                    className={`w-full px-3 py-2 rounded-lg text-xs font-bold text-slate-800 focus:outline-none ${
+                      userSchool ? 'bg-slate-200/70 border border-slate-300' : 'bg-white border border-slate-200 focus:border-sky-600'
+                    }`}
+                    required
+                  />
+                  {errors.school_origin_name && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.school_origin_name}</p>}
+                </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">NPSN Sekolah Asal</label>
-                <input
-                  type="text"
-                  maxLength={10}
-                  value={data.school_origin_npsn}
-                  onChange={(e) => setData('school_origin_npsn', e.target.value)}
-                  readOnly={!!userSchool}
-                  placeholder="Contoh: 20200001"
-                  className={`w-full px-3 py-2 rounded-lg text-xs font-bold text-slate-800 focus:outline-none ${
-                    userSchool ? 'bg-slate-200/70 border border-slate-300' : 'bg-white border border-slate-200 focus:border-sky-600'
-                  }`}
-                />
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">NPSN Sekolah Asal</label>
+                  <input
+                    type="text"
+                    maxLength={10}
+                    value={data.school_origin_npsn}
+                    onChange={(e) => setData('school_origin_npsn', e.target.value)}
+                    readOnly={!!userSchool}
+                    placeholder="Contoh: 20200001"
+                    className={`w-full px-3 py-2 rounded-lg text-xs font-bold text-slate-800 focus:outline-none ${
+                      userSchool ? 'bg-slate-200/70 border border-slate-300' : 'bg-white border border-slate-200 focus:border-sky-600'
+                    }`}
+                  />
+                </div>
               </div>
-            </div>
+            ) : (
+              data.origin_region === 'dalam' ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="md:col-span-2">
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Pilih Sekolah Asal di Kab. Bandung Barat *</label>
+                    <input
+                      list="edit-schools-origin-list"
+                      type="text"
+                      value={data.school_origin_name}
+                      onChange={handleOriginChange}
+                      placeholder="Pilih atau cari SD / SMP asal di KBB..."
+                      className="w-full px-3 py-2 rounded-lg text-xs font-bold text-slate-800 bg-white border border-slate-200 focus:border-emerald-600 focus:outline-none"
+                      required
+                    />
+                    <datalist id="edit-schools-origin-list">
+                      {schools && schools.map((sch) => (
+                        <option key={sch.id} value={sch.name}>
+                          {sch.jenjang} - NPSN: {sch.npsn} - Kec. {sch.kecamatan || '-'}
+                        </option>
+                      ))}
+                    </datalist>
+                    {errors.school_origin_name && <p className="text-[11px] text-rose-600 mt-1 font-semibold">{errors.school_origin_name}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">NPSN Sekolah Asal</label>
+                    <input
+                      type="text"
+                      maxLength={10}
+                      value={data.school_origin_npsn}
+                      onChange={(e) => setData('school_origin_npsn', e.target.value)}
+                      placeholder="NPSN (otomatis dari pilihan)"
+                      className="w-full px-3 py-2 rounded-lg text-xs font-bold text-slate-800 bg-white border border-slate-200 focus:border-emerald-600 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-amber-50/70 border border-amber-200 p-3 rounded-xl space-y-2">
+                  <div className="text-[11px] text-amber-900 font-bold flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-amber-600" /> Sekolah Asal Berada di Luar Kab. Bandung Barat
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">Nama Sekolah Asal *</label>
+                      <input
+                        type="text"
+                        value={data.school_origin_name}
+                        onChange={(e) => setData('school_origin_name', e.target.value)}
+                        placeholder="Contoh: SMPN 3 Bandung / SDN Menteng"
+                        className="w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-800 bg-white border border-amber-200 focus:border-amber-500 focus:outline-none"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">Kota / Kab & Provinsi Asal (Opsional)</label>
+                      <input
+                        type="text"
+                        value={data.origin_city}
+                        onChange={(e) => setData('origin_city', e.target.value)}
+                        placeholder="Contoh: Kota Bandung, Jawa Barat"
+                        className="w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-800 bg-white border border-amber-200 focus:border-amber-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">NPSN Asal (Opsional)</label>
+                      <input
+                        type="text"
+                        maxLength={10}
+                        value={data.school_origin_npsn}
+                        onChange={(e) => setData('school_origin_npsn', e.target.value)}
+                        placeholder="NPSN jika ada"
+                        className="w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-800 bg-white border border-amber-200 focus:border-amber-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )
+            )}
           </div>
 
             <div className="pt-1">
