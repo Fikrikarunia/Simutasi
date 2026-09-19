@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useForm, Head, Link } from '@inertiajs/react';
-import { Lock, Mail, ArrowRight, ShieldCheck, School, ArrowLeft } from 'lucide-react';
+import { Lock, Mail, ArrowRight, ShieldCheck, School, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
+  const [role, setRole] = useState('operator');
+  const [showPassword, setShowPassword] = useState(false);
+
   const { data, setData, post, processing, errors } = useForm({
-    email: 'admin@disdik.kbb.go.id',
-    password: 'password',
+    email: '',
+    password: '',
     remember: true,
   });
 
@@ -14,9 +17,9 @@ export default function Login() {
     post('/login');
   };
 
-  const setPreset = (email) => {
-    setData('email', email);
-    setData('password', 'password');
+  const handleRoleChange = (newRole) => {
+    setRole(newRole);
+    setData('email', '');
   };
 
   return (
@@ -75,24 +78,72 @@ export default function Login() {
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="p-8 space-y-5">
+            {/* Pilihan Peran / Role Selector */}
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Email Pengguna atau NPSN Sekolah
+                Pilih Peran Masuk
+              </label>
+              <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-2xl border border-slate-200/90 gap-1">
+                <button
+                  type="button"
+                  onClick={() => handleRoleChange('operator')}
+                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    role === 'operator'
+                      ? 'bg-white text-emerald-700 shadow-sm border border-slate-200/60 font-black'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <School className={`w-4 h-4 ${role === 'operator' ? 'text-emerald-600' : 'text-slate-400'}`} />
+                  <span>Operator Sekolah</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRoleChange('admin')}
+                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    role === 'admin'
+                      ? 'bg-white text-sky-700 shadow-sm border border-slate-200/60 font-black'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <ShieldCheck className={`w-4 h-4 ${role === 'admin' ? 'text-sky-600' : 'text-slate-400'}`} />
+                  <span>Admin Dinas</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Input Identifier (NPSN / Email) */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                {role === 'operator' ? 'NPSN Sekolah atau Email Operator' : 'Email Akun Admin Dinas'}
               </label>
               <div className="relative">
-                <Mail className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                {role === 'operator' ? (
+                  <School className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                ) : (
+                  <Mail className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                )}
                 <input
                   type="text"
                   value={data.email}
                   onChange={(e) => setData('email', e.target.value)}
-                  placeholder="Email dinas atau 8-digit NPSN Sekolah (cth: 20227510)"
+                  placeholder={
+                    role === 'operator'
+                      ? 'Masukkan 8-digit NPSN (cth: 20227510)'
+                      : 'cth: admin@disdik.kbb.go.id'
+                  }
                   className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:border-sky-600 focus:outline-none transition-all"
                   required
                 />
               </div>
+              <p className="text-[11px] text-slate-500 mt-1.5">
+                {role === 'operator'
+                  ? 'Gunakan 8 digit NPSN sekolah yang telah terdaftar di Dapodik Kab. Bandung Barat.'
+                  : 'Gunakan alamat email resmi staf / verifikator Dinas Pendidikan Kab. Bandung Barat.'}
+              </p>
               {errors.email && <p className="text-xs text-rose-600 font-semibold mt-1">{errors.email}</p>}
             </div>
 
+            {/* Input Password with Show/Hide Eye Toggle */}
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                 Kata Sandi / Password
@@ -100,13 +151,26 @@ export default function Login() {
               <div className="relative">
                 <Lock className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={data.password}
                   onChange={(e) => setData('password', e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:border-sky-600 focus:outline-none transition-all"
+                  className="w-full pl-11 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:border-sky-600 focus:outline-none transition-all"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                  title={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none p-1 rounded-lg transition-colors cursor-pointer"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5 text-slate-600" />
+                  ) : (
+                    <Eye className="w-5 h-5 text-slate-400 hover:text-slate-600" />
+                  )}
+                </button>
               </div>
               {errors.password && <p className="text-xs text-rose-600 font-semibold mt-1">{errors.password}</p>}
             </div>
@@ -132,49 +196,10 @@ export default function Login() {
               {processing ? 'Memproses...' : 'Masuk ke Aplikasi'}
               <ArrowRight className="w-4 h-4" />
             </button>
-
-            {/* Quick Demo Presets */}
-            <div className="pt-4 border-t border-slate-100">
-              <p className="text-center text-[11px] font-bold uppercase text-slate-400 mb-2.5">
-                Pilih Peran Penguji Demo (Preset)
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPreset('admin@disdik.kbb.go.id')}
-                  className={`p-2.5 rounded-xl text-left transition-all border cursor-pointer ${
-                    data.email === 'admin@disdik.kbb.go.id'
-                      ? 'bg-sky-50 border-sky-400 ring-2 ring-sky-200'
-                      : 'bg-slate-50 hover:bg-sky-50 border-slate-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800">
-                    <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
-                    ADMIN DINAS
-                  </div>
-                  <p className="text-[10px] text-slate-500 mt-0.5 truncate">admin@disdik.kbb.go.id</p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPreset('20227510')}
-                  className={`p-2.5 rounded-xl text-left transition-all border cursor-pointer ${
-                    data.email === '20227510'
-                      ? 'bg-emerald-50 border-emerald-400 ring-2 ring-emerald-200'
-                      : 'bg-slate-50 hover:bg-emerald-50 border-slate-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800">
-                    <School className="w-3.5 h-3.5 text-emerald-600" />
-                    OPERATOR (NPSN)
-                  </div>
-                  <p className="text-[10px] text-slate-500 mt-0.5 truncate">20227510 (SD Advent)</p>
-                </button>
-              </div>
-            </div>
           </form>
         </div>
       </div>
     </div>
   );
 }
+
